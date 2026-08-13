@@ -8,6 +8,7 @@ every downstream component can assume a clean alphabet.
 
 from __future__ import annotations
 
+import functools
 import itertools
 
 import numpy as np
@@ -84,9 +85,14 @@ def kmer_vocabulary(k: int) -> list[str]:
     return ["".join(p) for p in itertools.product(CANONICAL_AA, repeat=k)]
 
 
+@functools.lru_cache(maxsize=4)
+def _kmer_index(k: int) -> dict[str, int]:
+    return {kmer: i for i, kmer in enumerate(kmer_vocabulary(k))}
+
+
 def kmer_features(sequence: str, k: int = 3, normalize: bool = True) -> np.ndarray:
     """Frequency vector over all 20^k k-mers (8000 dims for k=3)."""
-    index = {kmer: i for i, kmer in enumerate(kmer_vocabulary(k))}
+    index = _kmer_index(k)
     vec = np.zeros(len(index), dtype=np.float32)
     for i in range(len(sequence) - k + 1):
         idx = index.get(sequence[i : i + k])
