@@ -24,8 +24,12 @@ from ml.sequence import SequenceValidationError
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    state = get_state()  # loads corpus + embedding store; encoder stays lazy
-    print(f"ProteinLens API: {len(state.df)} proteins, poolings {state.store.poolings}")
+    try:
+        state = get_state()  # loads corpus + embedding store; encoder stays lazy
+        print(f"ProteinLens API: {len(state.df)} proteins, poolings {state.store.poolings}")
+    except FileNotFoundError as exc:
+        # Don't crash the server: endpoints answer 503 until artifacts exist.
+        print(f"WARNING: data artifacts missing ({exc}); run the pipeline scripts.")
     yield
 
 
