@@ -60,7 +60,9 @@ class ESM2Encoder:
         self.device = resolve_device(device)
         self.token_budget = token_budget
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        self.model = AutoModel.from_pretrained(model_name)
+        # add_pooling_layer=False: we pool ourselves; avoids a randomly
+        # initialized (and unused) EsmPooler in the checkpoint load.
+        self.model = AutoModel.from_pretrained(model_name, add_pooling_layer=False)
         self.model.eval().to(self.device)
         for param in self.model.parameters():
             param.requires_grad_(False)
