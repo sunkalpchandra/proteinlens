@@ -140,17 +140,66 @@ export default function AboutPage() {
           </p>
         </Section>
 
+        <Section title="Extended studies">
+          <p>
+            A fixed, stratified ~3,000-protein evaluation subset supports comparisons the
+            full corpus cannot afford: ESM-2 checkpoint scaling (8M / 35M / 150M behind
+            one registry-driven interface), attention poolers trained with cross-entropy
+            versus a supervised-contrastive objective (SupCon directly optimizes the
+            cosine geometry retrieval uses; early stopping on holdout 1-NN accuracy), and
+            the ProstT5 encoder as a structure-aware reference (3Di-translation training,
+            ~1.2B parameters, fp16 — a reference point rather than a like-for-like
+            pooling comparison). Every candidate embeds the identical subset and runs the
+            identical probe/retrieval/clustering suite.
+          </p>
+        </Section>
+
+        <Section title="Split validation">
+          <p>
+            Two independent grouping methods guard against homology leakage: the default
+            union-find over family and Pfam annotation tokens, and MMseqs2 clustering at
+            30% identity / 80% coverage. On 200,000 sampled protein pairs, no pair joined
+            by identity clustering is separated by the annotation grouping — the
+            annotation method is strictly more conservative. Probe metrics measured under
+            the looser identity splits come out higher, which is exactly the signature of
+            readmitted homology; reported numbers use the stricter grouping.
+          </p>
+        </Section>
+
+        <Section title="Index backends">
+          <p>
+            Retrieval serves exact cosine search (FAISS IndexFlatIP) at the current 12k
+            scale and switches to HNSW past 50k vectors, where measured recall@10 stays
+            above 0.999 at several times the exact-search throughput. IVF is available as
+            the memory-lean alternative. All three sit behind one interface with
+            persisted backend metadata.
+          </p>
+        </Section>
+
+        <Section title="Region embeddings">
+          <p>
+            A region embedding mean-pools the residue vectors of a contiguous span —
+            the same construction as protein-level mean pooling, restricted to the span —
+            and queries the protein-level index with it. UniProt-curated DOMAIN
+            coordinates (about a third of the corpus carries them) seed the spans;
+            arbitrary spans work too. Results are a cross-granularity cosine comparison
+            and are labeled as such.
+          </p>
+        </Section>
+
         <Section title="Limitations">
           <p>
-            The encoder is the 35M-parameter ESM-2 — the smallest of the family; larger
-            models organize sequence space measurably better, so absolute numbers here
-            understate what the architecture can do. The UMAP layout distorts global
-            structure and should be read only through local neighborhoods. Annotation
-            sparsity in Swiss-Prot (missing families, incomplete EC and localization
-            labels) caps probe and retrieval scores independently of representation
-            quality. Attention weights are model-dependent interpretability signals, not
-            functional-residue annotations. And nothing here uses structural information
-            — all signals derive from sequence alone.
+            The serving encoder is the 35M-parameter ESM-2 — the smallest checkpoints of
+            the family organize sequence space measurably worse than large ones, and the
+            scaling study quantifies exactly that gap on this corpus. The UMAP layout
+            distorts global structure and should be read only through local
+            neighborhoods. Annotation sparsity in Swiss-Prot (missing families,
+            incomplete EC and localization labels) caps probe and retrieval scores
+            independently of representation quality. Attention weights are
+            model-dependent interpretability signals, not functional-residue annotations.
+            Structural information enters only indirectly, through ProstT5&apos;s
+            supervision, and only as a benchmark reference — the served representations
+            derive from sequence alone.
           </p>
         </Section>
       </div>
