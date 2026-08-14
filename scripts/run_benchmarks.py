@@ -298,3 +298,7 @@ def write_markdown(table: pd.DataFrame, sve: dict, split_summary: dict,
               "High-cosine low-identity pairs are *representation-space neighbors*; "
               "no claim of biological convergence is made without evidence.", ""]
     path.write_text("\n".join(lines))
+
+
+if __name__ == "__main__":
+    sys.exit(main())
