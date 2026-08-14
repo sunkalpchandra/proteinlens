@@ -221,8 +221,19 @@ learned representation must clear.
 ## Results
 
 <!-- RESULTS:BEGIN — filled by scripts/run_benchmarks.py output; see reports/benchmark.md -->
-Benchmarks are being regenerated; see `reports/benchmark.md` after running
-`python scripts/run_benchmarks.py`.
+Headline numbers from the last full run (`reports/benchmark.csv`; regenerate with
+`python scripts/run_benchmarks.py`). Probes use leakage-aware family-grouped splits.
+
+| Representation | Probe macro-F1 (mean of 3 tasks) | Retrieval P@10 (Pfam) | Cluster NMI (family) | Stability cos (1 sub) |
+|---|---|---|---|---|
+| 3-mer frequencies (baseline) | 0.337 | 0.190 | 0.390 | 0.9884 |
+| one-hot composition (baseline) | 0.331 | 0.106 | 0.428 | 0.9997 |
+| ESM-2 mean pooling | 0.528 | 0.350 | 0.467 | 0.9961 |
+| ESM-2 max pooling | 0.495 | 0.430 | 0.478 | 0.9973 |
+| ESM-2 BOS token | 0.493 | 0.255 | 0.440 | 0.9963 |
+| ESM-2 attention pooling (learned) | 0.447 | 0.337 | 0.457 | 0.9808 |
+
+Full per-task tables: [`reports/benchmark.md`](reports/benchmark.md).
 <!-- RESULTS:END -->
 
 Figures in `reports/figures/` (regenerate with `python scripts/generate_figures.py`): global map,

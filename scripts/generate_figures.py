@@ -90,7 +90,8 @@ def fig_embedding_map(points: pd.DataFrame) -> None:
                    label=f"{label} ({len(sub)})", rasterized=True)
     ax.set_xlabel("UMAP-1")
     ax.set_ylabel("UMAP-2")
-    ax.set_title("Protein representation map — ESM-2 mean pooling, PCA→UMAP")
+    # ASCII arrow: "→" has no glyph in Helvetica Neue and renders as a box.
+    ax.set_title("Protein representation map — ESM-2 mean pooling, PCA then UMAP")
     ax.set_xticks([])
     ax.set_yticks([])
     ax.legend(loc="upper left", bbox_to_anchor=(1.01, 1.0), markerscale=2.2)

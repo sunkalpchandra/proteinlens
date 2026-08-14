@@ -1,0 +1,67 @@
+{
+  "experiment_id": "20260814_125613_benchmark_517c68",
+  "kind": "benchmark",
+  "created_at": "2026-08-14T12:56:13.025278+00:00",
+  "git_commit": "1126d153e4125ca16c6919cd70afb8382d2234a8",
+  "config": {
+    "model": "facebook/esm2_t12_35M_UR50D",
+    "seed": 42,
+    "corpus_sha256_16": "fcc669c7dab05daf",
+    "split_summary": {
+      "seed": 42,
+      "ratios": [
+        0.7,
+        0.15,
+        0.15
+      ],
+      "group_stats": {
+        "annotated": 11639,
+        "unannotated_linked_to_annotated": 1,
+        "unannotated_own_cluster": 359,
+        "n_groups": 3508,
+        "largest_group": 2099,
+        "largest_group_fraction": 0.17493124427035586
+      },
+      "split_sizes": {
+        "train": 8399,
+        "val": 1800,
+        "test": 1800
+      },
+      "groups_per_split": {
+        "train": 2446,
+        "val": 531,
+        "test": 531
+      },
+      "leakage_audit": {
+        "n_pairs": 2000,
+        "kmer_k": 4,
+        "cross_split": {
+          "mean": 0.003693139646202326,
+          "p95": 0.011160790920257568,
+          "p99": 0.0204707570374012,
+          "max": 0.23375694453716278
+        },
+        "train_reference": {
+          "mean": 0.0036015943624079227,
+          "p95": 0.012044869363307953,
+          "p99": 0.019527487456798553,
+          "max": 0.06855060905218124
+        }
+      }
+    },
+    "pairs": 4000
+  },
+  "metrics": {
+    "rows": 42,
+    "seq_vs_embedding": {
+      "n_pairs": 3976,
+      "n_random": 2000,
+      "n_nn": 1976,
+      "pearson_r_random": 0.08427165463465469,
+      "low_identity_high_cosine_random": 571,
+      "low_identity_high_cosine_nn": 1215,
+      "high_identity_low_cosine_random": 0,
+      "high_identity_low_cosine_nn": 0
+    }
+  }
+}
