@@ -1,6 +1,5 @@
 """Trajectory validation logic (no model needed — a stub pipeline suffices)."""
 
-import numpy as np
 import pytest
 import torch
 
