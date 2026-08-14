@@ -12,6 +12,7 @@
 import type {
   AttentionPayload,
   BenchmarkPayload,
+  ClustersPayload,
   DomainsPayload,
   Health,
   Landscape,
@@ -287,4 +288,9 @@ export async function trajectoryOf(
     method: "POST",
     body: JSON.stringify({ ...target, mutations, pooling }),
   });
+}
+
+export async function getClusters(pooling: Pooling = "mean"): Promise<ClustersPayload> {
+  if (!isLive) return demoFile<ClustersPayload>(`clusters_${pooling}.json`);
+  return request<ClustersPayload>(`/clusters?pooling=${pooling}`);
 }

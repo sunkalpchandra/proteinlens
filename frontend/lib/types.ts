@@ -185,3 +185,18 @@ export interface TrajectoryPayload {
   directness: number;
   note: string;
 }
+
+export interface ClusterSummary {
+  cluster: number;
+  size: number;
+  mean_length: number;
+  top_families: Record<string, number>;
+  top_organisms: Record<string, number>;
+  enzyme_fraction: number;
+}
+
+export interface ClustersPayload {
+  pooling: string;
+  clustering: { n_clusters?: number; silhouette_cosine?: number; inertia?: number };
+  clusters: ClusterSummary[];
+}
