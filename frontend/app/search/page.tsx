@@ -4,6 +4,7 @@
  *  for a pasted amino-acid sequence (live API only; demo mode disables it). */
 
 import { useCallback, useMemo, useState } from "react";
+import { DownloadJson } from "@/components/download-json";
 import { HitTable } from "@/components/hit-table";
 import { ApiError, findProteins, isLive, searchBySequence } from "@/lib/data";
 import type { Pooling, ProteinSummary, SearchHit } from "@/lib/types";
@@ -310,8 +311,13 @@ export default function SearchPage() {
                 ) : seqHits === null ? null : seqHits.length === 0 ? (
                   <QuietNotice>No matches</QuietNotice>
                 ) : (
-                  <div className="panel px-1 py-1">
-                    <HitTable hits={seqHits} showSimilarity />
+                  <div className="space-y-2">
+                    <div className="flex justify-end">
+                      <DownloadJson payload={seqHits} filename="proteinlens-search.json" />
+                    </div>
+                    <div className="panel px-1 py-1">
+                      <HitTable hits={seqHits} showSimilarity />
+                    </div>
                   </div>
                 )}
               </div>
