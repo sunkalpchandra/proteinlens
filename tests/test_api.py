@@ -142,3 +142,27 @@ class TestDomains:
             "/region-search", json={"accession": "T0000", "start": 10, "end": 12}
         )
         assert response.status_code == 422
+
+
+class TestTrajectoryValidation:
+    """Validation paths only — a valid trajectory needs the live encoder."""
+
+    SEQ = TestModelEndpoints.SEQ
+
+    def test_requires_mutations(self, client):
+        response = client.post("/trajectory", json={"sequence": self.SEQ, "mutations": []})
+        assert response.status_code == 422
+
+    def test_rejects_stale_wildtype_in_chain(self, client):
+        response = client.post(
+            "/trajectory", json={"sequence": self.SEQ, "mutations": ["H59Y", "H59W"]}
+        )
+        assert response.status_code == 422
+        assert "mismatch" in response.json()["detail"]
+
+    def test_rejects_overlong_chain(self, client):
+        muts = ["M1A", "A1M"] * 6
+        response = client.post(
+            "/trajectory", json={"sequence": self.SEQ, "mutations": muts}
+        )
+        assert response.status_code == 422
