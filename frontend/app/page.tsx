@@ -196,6 +196,16 @@ export default function LandingPage() {
             </li>
           ))}
         </ol>
+        <p className="mt-8 max-w-3xl text-[12.5px] leading-relaxed text-ink3">
+          Deeper cuts: <Link href="/clusters" className="text-accent hover:underline">representation
+          clusters</Link> with per-cluster composition,{" "}
+          <Link href="/compare" className="text-accent hover:underline">pairwise comparison</Link>{" "}
+          of identity vs cosine across poolings, curated domain tracks with region-level
+          search on every profile, and{" "}
+          <Link href="/benchmarks" className="text-accent hover:underline">extended benchmarks</Link>{" "}
+          covering ESM-2 checkpoint scaling, contrastive pooler training, and a
+          structure-aware ProstT5 reference.
+        </p>
       </section>
 
       {/* Footer ------------------------------------------------------------ */}
