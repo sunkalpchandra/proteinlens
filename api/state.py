@@ -27,11 +27,14 @@ class AppState:
         embeddings_dir: str | Path = "data/embeddings",
         index_dir: str | Path = "data/index",
         reports_dir: str | Path = "reports",
+        domains_path: str | Path = "data/processed/domains.parquet",
     ) -> None:
         self.corpus_path = Path(corpus_path)
         self.embeddings_dir = Path(embeddings_dir)
         self.index_dir = Path(index_dir)
         self.reports_dir = Path(reports_dir)
+        self.domains_path = Path(domains_path)
+        self._domains: pd.DataFrame | None = None
         self.model_name = os.environ.get("PROTEINLENS_MODEL", "facebook/esm2_t12_35M_UR50D")
 
         self.df = pd.read_parquet(self.corpus_path)
@@ -89,6 +92,17 @@ class AppState:
     @property
     def encoder_loaded(self) -> bool:
         return self._pipeline is not None
+
+    def domains_for(self, accession: str) -> list[dict]:
+        """UniProt-curated DOMAIN features; empty when no data file exists."""
+        if self._domains is None:
+            if self.domains_path.exists():
+                self._domains = pd.read_parquet(self.domains_path)
+            else:
+                self._domains = pd.DataFrame(columns=["accession", "name", "start", "end"])
+        rows = self._domains[self._domains["accession"] == accession]
+        return [{"name": r.name_, "start": int(r.start), "end": int(r.end)}
+                for r in rows.rename(columns={"name": "name_"}).itertuples()]
 
     # -- helpers ----------------------------------------------------------
     def protein_row(self, accession: str) -> pd.Series:
