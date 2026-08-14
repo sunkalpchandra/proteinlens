@@ -130,7 +130,9 @@ def main() -> int:
     print(f"Pooler training set: {len(sampled)} proteins, {len(classes)} family classes")
 
     # --- Encode once with the frozen LM, keep residue embeddings in RAM -----
-    encoder = ESM2Encoder(args.model)
+    # Half the registry budget: this process also holds every residue tensor,
+    # and full-budget attention spikes tip 8GB unified memory into MPS OOM.
+    encoder = ESM2Encoder(args.model, token_budget=8192)
     t0 = time.time()
     encoded = encoder.encode_batch(sampled["sequence"].tolist())
     residue_sets = [e.residue_embeddings for e in encoded]
