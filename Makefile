@@ -46,12 +46,14 @@ extended: subset
 	$(PYTHON) scripts/embed_subset_attention.py --pooler data/embeddings/attention_pooler_supcon.pt --name attention_supcon
 	$(PYTHON) scripts/embed_subset_prost.py
 	$(PYTHON) scripts/run_extended_benchmarks.py
+	$(PYTHON) scripts/generate_extended_figures.py
 
 ann-benchmark:
 	$(PYTHON) scripts/benchmark_ann.py
 
 figures:
 	$(PYTHON) scripts/generate_figures.py
+	$(PYTHON) scripts/generate_extended_figures.py
 
 demo:
 	$(PYTHON) scripts/build_demo_bundle.py
