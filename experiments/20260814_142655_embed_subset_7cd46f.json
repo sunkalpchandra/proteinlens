@@ -1,0 +1,13 @@
+{
+  "experiment_id": "20260814_142655_embed_subset_7cd46f",
+  "kind": "embed_subset",
+  "created_at": "2026-08-14T14:26:55.260151+00:00",
+  "git_commit": "3d77ced01f118400b609517d01fc6ab9bcad41ce",
+  "config": {
+    "model": "facebook/esm2_t30_150M_UR50D",
+    "n": 2997
+  },
+  "metrics": {
+    "wall_time_s": 480.2
+  }
+}
