@@ -1,8 +1,14 @@
 """FAISS-based semantic protein retrieval.
 
-Embeddings are L2-normalized and indexed with ``IndexFlatIP``, so inner product
-equals cosine similarity and search is exact (no ANN recall loss at this corpus
-scale; the API stays identical if the index is swapped for IVF/HNSW later).
+Embeddings are L2-normalized so inner product equals cosine similarity. Three
+interchangeable backends sit behind one interface:
+
+  flat   IndexFlatIP — exact; the default up to ~50k vectors
+  hnsw   IndexHNSWFlat — graph ANN; sub-millisecond queries past 100k vectors
+  ivf    IndexIVFFlat — clustered ANN; smallest memory of the three
+
+``auto_backend`` picks by corpus size; ``scripts/benchmark_ann.py`` measures
+the recall/QPS trade-off that justifies the thresholds.
 """
 
 from __future__ import annotations
@@ -16,6 +22,16 @@ import numpy as np
 
 from ml.embeddings import l2_normalize
 
+BACKENDS = ("flat", "hnsw", "ivf")
+
+# Exact search stays affordable well past this corpus's size; the graph index
+# earns its build cost once brute force stops being interactive.
+AUTO_ANN_THRESHOLD = 50_000
+
+
+def auto_backend(n_vectors: int) -> str:
+    return "flat" if n_vectors < AUTO_ANN_THRESHOLD else "hnsw"
+
 
 @dataclass
 class SearchHit:
@@ -25,23 +41,60 @@ class SearchHit:
 
 
 class ProteinIndex:
-    """Exact cosine-similarity index over one pooling strategy's embeddings."""
+    """Cosine-similarity index over one pooling strategy's embeddings."""
 
-    def __init__(self, index: faiss.Index, accessions: list[str], pooling: str) -> None:
+    def __init__(
+        self,
+        index: faiss.Index,
+        accessions: list[str],
+        pooling: str,
+        backend: str = "flat",
+    ) -> None:
         self.index = index
         self.accessions = accessions
         self.pooling = pooling
+        self.backend = backend
         self.row_of = {acc: i for i, acc in enumerate(accessions)}
 
     # -- construction ------------------------------------------------------
     @classmethod
-    def build(cls, embeddings: np.ndarray, accessions: list[str], pooling: str) -> ProteinIndex:
+    def build(
+        cls,
+        embeddings: np.ndarray,
+        accessions: list[str],
+        pooling: str,
+        backend: str = "flat",
+        hnsw_m: int = 32,
+        ef_construction: int = 200,
+        ef_search: int = 64,
+        nlist: int | None = None,
+        nprobe: int = 16,
+    ) -> ProteinIndex:
         if embeddings.shape[0] != len(accessions):
             raise ValueError("embeddings/accessions length mismatch")
+        if backend not in BACKENDS:
+            raise ValueError(f"Unknown backend {backend!r}; options: {BACKENDS}")
         normalized = l2_normalize(np.ascontiguousarray(embeddings, dtype=np.float32))
-        index = faiss.IndexFlatIP(normalized.shape[1])
+        dim = normalized.shape[1]
+
+        if backend == "flat":
+            index: faiss.Index = faiss.IndexFlatIP(dim)
+        elif backend == "hnsw":
+            index = faiss.IndexHNSWFlat(dim, hnsw_m, faiss.METRIC_INNER_PRODUCT)
+            index.hnsw.efConstruction = ef_construction
+            index.hnsw.efSearch = ef_search
+        else:  # ivf
+            nlist = nlist or max(16, int(np.sqrt(len(accessions))) * 4)
+            quantizer = faiss.IndexFlatIP(dim)
+            index = faiss.IndexIVFFlat(quantizer, dim, nlist, faiss.METRIC_INNER_PRODUCT)
+            index.train(normalized)
+            index.nprobe = nprobe
+
         index.add(normalized)
-        return cls(index, list(accessions), pooling)
+        if backend == "ivf":
+            # reconstruct() needs a direct map on IVF (neighbors_of, kNN stats).
+            index.make_direct_map()
+        return cls(index, list(accessions), pooling, backend)
 
     def save(self, directory: str | Path) -> None:
         directory = Path(directory)
@@ -49,6 +102,9 @@ class ProteinIndex:
         faiss.write_index(self.index, str(directory / f"index_{self.pooling}.faiss"))
         (directory / f"index_{self.pooling}_accessions.json").write_text(
             json.dumps(self.accessions)
+        )
+        (directory / f"index_{self.pooling}_meta.json").write_text(
+            json.dumps({"backend": self.backend})
         )
 
     @classmethod
@@ -59,7 +115,13 @@ class ProteinIndex:
             raise FileNotFoundError(f"No FAISS index for pooling '{pooling}' in {directory}")
         index = faiss.read_index(str(index_path))
         accessions = json.loads((directory / f"index_{pooling}_accessions.json").read_text())
-        return cls(index, accessions, pooling)
+        meta_path = directory / f"index_{pooling}_meta.json"
+        backend = "flat"
+        if meta_path.exists():
+            backend = json.loads(meta_path.read_text()).get("backend", "flat")
+        if backend == "ivf":
+            index.make_direct_map()  # not persisted by write_index
+        return cls(index, accessions, pooling, backend)
 
     # -- queries -------------------------------------------------------------
     def search(self, query: np.ndarray, k: int = 10, exclude: str | None = None) -> list[SearchHit]:
