@@ -7,13 +7,21 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { DomainTrack } from "@/components/domain-track";
 import { ResidueTrack } from "@/components/residue-track";
 import { SequenceViewer } from "@/components/sequence-viewer";
 import { StatGrid, type StatItem } from "@/components/stat-grid";
-import { ApiError, getAttention, getProfile, isLive } from "@/lib/data";
+import { ApiError, getAttention, getDomains, getProfile, isLive, regionSearch } from "@/lib/data";
 import { AA_CATEGORY, aaColor } from "@/lib/palette";
-import type { AttentionPayload, Pooling, ProteinProfile, SearchHit } from "@/lib/types";
+import type {
+  AttentionPayload,
+  DomainsPayload,
+  Pooling,
+  ProteinProfile,
+  RegionSearchPayload,
+  SearchHit,
+} from "@/lib/types";
 
 const POOLINGS: Pooling[] = ["mean", "max", "bos", "attention"];
 const MAX_KEYWORDS = 12;
@@ -118,6 +126,7 @@ function NeighborList({ hits }: { hits: SearchHit[] }) {
 // ---------------------------------------------------------------------------
 
 type AttentionState = "loading" | "ok" | "missing" | "error";
+type DomainsState = "loading" | "ok" | "error";
 
 export function ProteinPageClient() {
   const params = useParams<{ id: string | string[] }>();
@@ -132,6 +141,20 @@ export function ProteinPageClient() {
   const [attention, setAttention] = useState<AttentionPayload | null>(null);
   const [attState, setAttState] = useState<AttentionState>("loading");
   const [attError, setAttError] = useState<string | null>(null);
+
+  const [domains, setDomains] = useState<DomainsPayload | null>(null);
+  const [domState, setDomState] = useState<DomainsState>("loading");
+  const [domError, setDomError] = useState<string | null>(null);
+
+  // Region search: inputs kept as strings so typing stays smooth; the parsed
+  // region drives the track selection and the sequence-context line.
+  const [regionStart, setRegionStart] = useState("");
+  const [regionEnd, setRegionEnd] = useState("");
+  const [regionError, setRegionError] = useState<string | null>(null);
+  const [regionLoading, setRegionLoading] = useState(false);
+  const [regionResult, setRegionResult] = useState<RegionSearchPayload | null>(null);
+  const [regionSearchError, setRegionSearchError] = useState<string | null>(null);
+  const regionReq = useRef(0); // invalidates in-flight region searches
 
   const [selected, setSelected] = useState<number | null>(null); // 1-based
 
@@ -192,6 +215,37 @@ export function ProteinPageClient() {
     };
   }, [accession]);
 
+  // Domain features load lazily alongside attention; region-search state
+  // resets whenever the protein changes.
+  useEffect(() => {
+    if (!accession) return;
+    let cancelled = false;
+    regionReq.current += 1;
+    setDomains(null);
+    setDomState("loading");
+    setDomError(null);
+    setRegionStart("");
+    setRegionEnd("");
+    setRegionError(null);
+    setRegionLoading(false);
+    setRegionResult(null);
+    setRegionSearchError(null);
+    getDomains(accession)
+      .then((d) => {
+        if (cancelled) return;
+        setDomains(d);
+        setDomState("ok");
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        setDomState("error");
+        setDomError(errorText(e));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [accession]);
+
   const toggleSelect = (pos: number) => setSelected((s) => (s === pos ? null : pos));
 
   // --- loading / error shells ------------------------------------------------
@@ -239,6 +293,65 @@ export function ProteinPageClient() {
     selected !== null && selected >= 1 && selected <= sequence.length
       ? sequence[selected - 1]
       : null;
+
+  // Parsed region shared by the domain track, the inputs, and the context line.
+  const startNum = Number(regionStart);
+  const endNum = Number(regionEnd);
+  const region =
+    regionStart.trim() !== "" &&
+    regionEnd.trim() !== "" &&
+    Number.isInteger(startNum) &&
+    Number.isInteger(endNum) &&
+    startNum >= 1 &&
+    endNum >= startNum &&
+    endNum <= sequence.length
+      ? { start: startNum, end: endNum }
+      : null;
+
+  const selectRegion = (r: { start: number; end: number }) => {
+    setRegionStart(String(r.start));
+    setRegionEnd(String(r.end));
+    setRegionError(null);
+  };
+
+  const runRegionSearch = () => {
+    const s = Number(regionStart);
+    const e = Number(regionEnd);
+    if (!Number.isInteger(s) || !Number.isInteger(e)) {
+      setRegionError("Enter integer start and end positions.");
+      return;
+    }
+    if (s < 1 || e > sequence.length) {
+      setRegionError(`Region must lie within 1–${sequence.length}.`);
+      return;
+    }
+    if (s > e) {
+      setRegionError("Start must not exceed end.");
+      return;
+    }
+    if (e - s + 1 < 5) {
+      setRegionError("Region must span at least 5 residues.");
+      return;
+    }
+    setRegionError(null);
+    setRegionResult(null);
+    setRegionSearchError(null);
+    setRegionLoading(true);
+    const reqId = ++regionReq.current;
+    regionSearch(p.accession, s, e, 10)
+      .then((res) => {
+        if (regionReq.current !== reqId) return;
+        setRegionResult(res);
+      })
+      .catch((err) => {
+        if (regionReq.current !== reqId) return;
+        setRegionSearchError(errorText(err));
+      })
+      .finally(() => {
+        if (regionReq.current !== reqId) return;
+        setRegionLoading(false);
+      });
+  };
 
   const statItems: StatItem[] = [
     { label: "embedding norm", value: fmt(stats.embedding_norm, 2) },
@@ -372,6 +485,96 @@ export function ProteinPageClient() {
                     </button>
                   );
                 })}
+              </div>
+            )}
+          </div>
+        )}
+      </Section>
+
+      {/* Domains & regions ----------------------------------------------------- */}
+      <Section title="domains & regions">
+        {domState === "loading" && (
+          <p className="loading-pulse font-mono text-[11px] text-ink3">loading domain features…</p>
+        )}
+        {domState === "error" && (
+          <p className="text-[13px] text-ink3">{domError ?? "Domain features unavailable."}</p>
+        )}
+        {domState === "ok" && domains && domains.domains.length === 0 && !isLive && (
+          <p className="text-[13px] text-ink3">No curated domain features for this protein.</p>
+        )}
+        {domState === "ok" && domains && (domains.domains.length > 0 || isLive) && (
+          <div>
+            {domains.domains.length > 0 && (
+              <div className="mb-3">
+                <DomainTrack
+                  length={sequence.length}
+                  domains={domains.domains}
+                  selected={region}
+                  onSelect={selectRegion}
+                />
+                {region !== null && (
+                  <p className="mt-1.5 font-mono text-[11px] text-ink2 tabular">
+                    region {region.start}–{region.end} · {region.end - region.start + 1} aa
+                  </p>
+                )}
+              </div>
+            )}
+            <div className="flex flex-wrap items-center gap-3">
+              <label className="flex items-center gap-1.5">
+                <span className="label-mono">start</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={sequence.length}
+                  value={regionStart}
+                  disabled={!isLive}
+                  onChange={(e) => {
+                    setRegionStart(e.target.value);
+                    setRegionError(null);
+                  }}
+                  className="w-20 rounded border border-bd bg-surface px-1.5 py-0.5 font-mono text-[11px] text-ink2 tabular outline-none focus:border-bds disabled:opacity-40"
+                />
+              </label>
+              <label className="flex items-center gap-1.5">
+                <span className="label-mono">end</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={sequence.length}
+                  value={regionEnd}
+                  disabled={!isLive}
+                  onChange={(e) => {
+                    setRegionEnd(e.target.value);
+                    setRegionError(null);
+                  }}
+                  className="w-20 rounded border border-bd bg-surface px-1.5 py-0.5 font-mono text-[11px] text-ink2 tabular outline-none focus:border-bds disabled:opacity-40"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={runRegionSearch}
+                disabled={!isLive || regionLoading}
+                className="rounded bg-accent px-3 py-1 font-mono text-[12px] font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-default disabled:opacity-40"
+              >
+                Search this region
+              </button>
+            </div>
+            {!isLive && (
+              <p className="mt-2 text-[13px] text-ink3">
+                Requires the live API — run the backend locally.
+              </p>
+            )}
+            {regionError && <p className="mt-2 font-mono text-[11px] text-ink3">{regionError}</p>}
+            {regionLoading && (
+              <p className="loading-pulse mt-3 font-mono text-[11px] text-ink3">embedding region…</p>
+            )}
+            {!regionLoading && regionSearchError && (
+              <p className="mt-3 text-[13px] text-ink3">{regionSearchError}</p>
+            )}
+            {!regionLoading && regionResult && (
+              <div className="mt-3">
+                <NeighborList hits={regionResult.hits} />
+                <p className="mt-1 text-xs text-ink3">{regionResult.note}</p>
               </div>
             )}
           </div>
