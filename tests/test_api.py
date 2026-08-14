@@ -115,3 +115,30 @@ class TestModelEndpoints:
         ).json()
         assert body["wildtype"] == "H"
         assert len(body["effects"]) == 19
+
+
+class TestDomains:
+    def test_domains_listed_with_coordinates(self, client):
+        body = client.get("/protein/T0000/domains").json()
+        assert body["length"] == 60
+        assert [d["name"] for d in body["domains"]] == ["EF-hand 1", "EF-hand 2"]
+        assert body["domains"][0]["start"] == 5
+
+    def test_protein_without_domains_gets_empty_list(self, client):
+        assert client.get("/protein/T0005/domains").json()["domains"] == []
+
+    def test_unknown_accession_404(self, client):
+        assert client.get("/protein/NOPE/domains").status_code == 404
+
+    def test_region_search_validates_bounds(self, client):
+        response = client.post(
+            "/region-search", json={"accession": "T0000", "start": 10, "end": 500}
+        )
+        assert response.status_code == 422
+        assert "outside" in response.json()["detail"]
+
+    def test_region_search_rejects_tiny_span(self, client):
+        response = client.post(
+            "/region-search", json={"accession": "T0000", "start": 10, "end": 12}
+        )
+        assert response.status_code == 422

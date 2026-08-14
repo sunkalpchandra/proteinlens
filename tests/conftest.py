@@ -87,6 +87,12 @@ def synthetic_state(tmp_path_factory):
         "points": points,
     }))
 
+    domains = pd.DataFrame([
+        {"accession": "T0000", "name": "EF-hand 1", "start": 5, "end": 25},
+        {"accession": "T0000", "name": "EF-hand 2", "start": 30, "end": 55},
+    ])
+    domains.to_parquet(processed / "domains.parquet", index=False)
+
     from api.state import AppState
 
     return AppState(
@@ -94,6 +100,7 @@ def synthetic_state(tmp_path_factory):
         embeddings_dir=embeddings,
         index_dir=index_dir,
         reports_dir=reports,
+        domains_path=processed / "domains.parquet",
     )
 
 
