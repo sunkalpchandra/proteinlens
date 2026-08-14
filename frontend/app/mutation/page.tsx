@@ -15,6 +15,7 @@ import {
 } from "@/components/mutation-heatmap";
 import { ResidueTrack } from "@/components/residue-track";
 import { SequenceViewer } from "@/components/sequence-viewer";
+import { TrajectoryPanel } from "@/components/trajectory-panel";
 import {
   analyzeMutation,
   ApiError,
@@ -615,6 +616,18 @@ function MutationWorkbench() {
             )}
           </div>
         </div>
+      )}
+
+      {accession && profile && (
+        <section className="mt-7 border-t border-bd pt-4">
+          <div className="flex items-baseline justify-between pb-3">
+            <h2 className="label-mono">Representation trajectory</h2>
+            <span className="font-mono text-[10px] text-ink3">
+              cumulative mutations, applied in order
+            </span>
+          </div>
+          <TrajectoryPanel accession={accession} pooling={pooling} seedMutation={picked} />
+        </section>
       )}
     </div>
   );
