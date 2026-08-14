@@ -57,3 +57,4 @@ frontend/next-env.d.ts
 .idea/
 .vscode/
 *.log
+frontend/tsconfig.tsbuildinfo

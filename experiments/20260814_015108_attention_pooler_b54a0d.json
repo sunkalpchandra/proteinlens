@@ -1,0 +1,107 @@
+{
+  "experiment_id": "20260814_015108_attention_pooler_b54a0d",
+  "kind": "attention_pooler",
+  "created_at": "2026-08-14T01:51:08.823771+00:00",
+  "git_commit": "4b1e2a0078940d27ed78fb42ba1eec374be49840",
+  "config": {
+    "corpus": "data/processed/proteins.parquet",
+    "splits": "data/processed/splits.json",
+    "out": "data/embeddings/attention_pooler.pt",
+    "model": "facebook/esm2_t12_35M_UR50D",
+    "max_classes": 120,
+    "min_members": 8,
+    "per_family": 20,
+    "holdout_frac": 0.15,
+    "epochs": 30,
+    "patience": 4,
+    "batch_size": 32,
+    "lr": 0.001,
+    "seed": 42
+  },
+  "metrics": {
+    "best_holdout_acc": 0.9148148148148149,
+    "n_train": 1460,
+    "n_holdout": 270,
+    "n_classes": 120,
+    "history": [
+      {
+        "epoch": 0,
+        "train_loss": 4.4631,
+        "train_acc": 0.2171,
+        "val_acc": 0.5296
+      },
+      {
+        "epoch": 1,
+        "train_loss": 3.1904,
+        "train_acc": 0.6507,
+        "val_acc": 0.7852
+      },
+      {
+        "epoch": 2,
+        "train_loss": 1.8423,
+        "train_acc": 0.8418,
+        "val_acc": 0.8444
+      },
+      {
+        "epoch": 3,
+        "train_loss": 1.1036,
+        "train_acc": 0.8829,
+        "val_acc": 0.8593
+      },
+      {
+        "epoch": 4,
+        "train_loss": 0.7549,
+        "train_acc": 0.9021,
+        "val_acc": 0.8815
+      },
+      {
+        "epoch": 5,
+        "train_loss": 0.5695,
+        "train_acc": 0.9205,
+        "val_acc": 0.8926
+      },
+      {
+        "epoch": 6,
+        "train_loss": 0.4627,
+        "train_acc": 0.9349,
+        "val_acc": 0.9074
+      },
+      {
+        "epoch": 7,
+        "train_loss": 0.3894,
+        "train_acc": 0.9473,
+        "val_acc": 0.9074
+      },
+      {
+        "epoch": 8,
+        "train_loss": 0.3351,
+        "train_acc": 0.9582,
+        "val_acc": 0.9148
+      },
+      {
+        "epoch": 9,
+        "train_loss": 0.2952,
+        "train_acc": 0.9644,
+        "val_acc": 0.9074
+      },
+      {
+        "epoch": 10,
+        "train_loss": 0.2622,
+        "train_acc": 0.9623,
+        "val_acc": 0.9148
+      },
+      {
+        "epoch": 11,
+        "train_loss": 0.2383,
+        "train_acc": 0.9705,
+        "val_acc": 0.9148
+      },
+      {
+        "epoch": 12,
+        "train_loss": 0.2171,
+        "train_acc": 0.9733,
+        "val_acc": 0.9074
+      }
+    ]
+  }
+}
