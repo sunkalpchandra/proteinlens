@@ -243,3 +243,30 @@ class TrajectoryResponse(BaseModel):
         "Sequential representation-space movement of a frozen protein language "
         "model; not an evolutionary path or fitness trajectory."
     )
+
+
+class CompareRequest(BaseModel):
+    a: str
+    b: str
+
+    @model_validator(mode="after")
+    def distinct(self) -> CompareRequest:
+        if self.a == self.b:
+            raise ValueError("Choose two different proteins to compare.")
+        return self
+
+
+class CompareResponse(BaseModel):
+    a: ProteinSummary
+    b: ProteinSummary
+    cosine_by_pooling: dict[str, float]
+    sequence_identity: float
+    same_family: bool
+    shared_pfam: list[str]
+    a_domains: list[DomainOut]
+    b_domains: list[DomainOut]
+    note: str = (
+        "Embedding cosine is representation similarity under a frozen model; "
+        "high cosine at low sequence identity marks representation-space "
+        "neighbors, not evidence of homology or shared function."
+    )
