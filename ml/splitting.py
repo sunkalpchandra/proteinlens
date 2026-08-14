@@ -128,10 +128,68 @@ def assign_groups(
     return groups, stats
 
 
+def mmseqs_groups(
+    df: pd.DataFrame,
+    min_seq_id: float = 0.3,
+    coverage: float = 0.8,
+    threads: int = 4,
+) -> tuple[pd.Series, dict]:
+    """Cluster sequences with MMseqs2 easy-cluster; one group per cluster.
+
+    This is the classical identity-threshold control for homology leakage:
+    30% identity at 80% coverage is the conventional "same fold likely"
+    boundary. Requires the ``mmseqs`` binary (brew install mmseqs2); raises
+    ``FileNotFoundError`` when absent so callers can fall back to annotation
+    grouping.
+    """
+    import shutil
+    import subprocess
+    import tempfile
+
+    if shutil.which("mmseqs") is None:
+        raise FileNotFoundError(
+            "mmseqs binary not found — install MMseqs2 or use method='annotation'."
+        )
+
+    with tempfile.TemporaryDirectory(prefix="plens_mmseqs_") as tmp:
+        tmp_path = Path(tmp)
+        fasta = tmp_path / "corpus.fasta"
+        with open(fasta, "w") as fh:
+            for row in df.itertuples():
+                fh.write(f">{row.accession}\n{row.sequence}\n")
+        subprocess.run(
+            ["mmseqs", "easy-cluster", str(fasta), str(tmp_path / "clu"),
+             str(tmp_path / "work"), "--min-seq-id", str(min_seq_id),
+             "-c", str(coverage), "--cov-mode", "0",
+             "--threads", str(threads), "-v", "1"],
+            check=True, capture_output=True, text=True,
+        )
+        cluster_tsv = tmp_path / "clu_cluster.tsv"
+        rep_of: dict[str, str] = {}
+        for line in cluster_tsv.read_text().splitlines():
+            rep, member = line.split("\t")
+            rep_of[member] = rep
+
+    groups = df["accession"].map(lambda a: f"mmseqs:{rep_of[a]}")
+    groups.index = df.index
+    sizes = groups.value_counts()
+    stats = {
+        "method": "mmseqs",
+        "min_seq_id": min_seq_id,
+        "coverage": coverage,
+        "n_groups": int(groups.nunique()),
+        "largest_group": int(sizes.iloc[0]),
+        "largest_group_fraction": float(sizes.iloc[0] / len(df)),
+        "singleton_fraction": float((sizes == 1).mean()),
+    }
+    return groups, stats
+
+
 def make_splits(
     df: pd.DataFrame,
     ratios: tuple[float, float, float] = (0.70, 0.15, 0.15),
     seed: int = 42,
+    method: str = "annotation",
 ) -> tuple[pd.Series, dict]:
     """Assign each protein to train/val/test such that groups never straddle splits.
 
@@ -140,7 +198,12 @@ def make_splits(
     small split at the end).
     """
     assert abs(sum(ratios) - 1.0) < 1e-9
-    groups, group_stats = assign_groups(df)
+    if method == "annotation":
+        groups, group_stats = assign_groups(df)
+    elif method == "mmseqs":
+        groups, group_stats = mmseqs_groups(df)
+    else:
+        raise ValueError(f"Unknown split method {method!r}; use 'annotation' or 'mmseqs'.")
     rng = np.random.default_rng(seed)
 
     sizes = groups.value_counts()
@@ -162,6 +225,7 @@ def make_splits(
     splits = groups.map(assignment)
     summary = {
         "seed": seed,
+        "method": method,
         "ratios": list(ratios),
         "group_stats": group_stats,
         "split_sizes": splits.value_counts().to_dict(),
