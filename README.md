@@ -132,11 +132,15 @@ Nothing under `data/` is committed; `scripts/download_data.py` reproduces it.
 ## Splits (leakage control)
 
 Random splits let homologs straddle train/test and turn probe metrics into homology detection.
-ProteinLens groups proteins by **UniProt family → Pfam domain → greedy 5-mer Jaccard cluster**
-(fallback chain), then assigns whole groups to train/val/test (70/15/15). A leakage audit samples
-cross-split pairs: 4-mer cosine similarity at p99 is 0.019 across splits vs 0.018 within train —
-i.e., cross-split similarity is indistinguishable from background. Residual risk (remote homology
-across families) is documented in [Limitations](#limitations).
+ProteinLens builds groups as **connected components of a union-find over annotation tokens**:
+each protein links its UniProt family label with *all* of its Pfam domains, so proteins sharing a
+domain share a group even when only one carries a family annotation (a tiered fallback would leak
+exactly those pairs — caught by this project's own adversarial review and fixed). Unannotated
+proteins join their most k-mer-similar annotated group at Jaccard ≥ 0.5, else form their own
+clusters. Whole groups are assigned to train/val/test (70/15/15), and a leakage audit compares
+cross-split k-mer similarity against a within-train reference (numbers in
+`data/processed/splits.json`). Residual risk (remote homology with no shared annotation) is
+documented in [Limitations](#limitations).
 
 Because families *are* the grouping unit, probe tasks target labels that cut across families
 (enzyme/non-enzyme, EC top class, subcellular localization) — a genuine generalization test, not

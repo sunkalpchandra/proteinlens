@@ -259,9 +259,13 @@ function MutationWorkbench() {
 
   const profileSeq = useRef(0);
   const detailSeq = useRef(0);
+  const landscapeSeq = useRef(0);
   const booted = useRef(false);
 
   const clearResults = () => {
+    // Invalidate any in-flight landscape: a response computed for the previous
+    // protein/position must never render against the new selection.
+    landscapeSeq.current += 1;
     setLandscape(null);
     setLandscapeError(null);
     setPicked(null);
@@ -321,15 +325,16 @@ function MutationWorkbench() {
 
   const computeLandscape = async () => {
     if (!accession || position === null) return;
+    clearResults(); // bumps landscapeSeq, invalidating older in-flight requests
+    const req = landscapeSeq.current;
     setLandscapeLoading(true);
-    clearResults();
     try {
       const result = await mutationLandscape({ accession }, position, pooling);
-      setLandscape(result);
+      if (landscapeSeq.current === req) setLandscape(result);
     } catch (err) {
-      setLandscapeError(errMessage(err));
+      if (landscapeSeq.current === req) setLandscapeError(errMessage(err));
     } finally {
-      setLandscapeLoading(false);
+      if (landscapeSeq.current === req) setLandscapeLoading(false);
     }
   };
 
