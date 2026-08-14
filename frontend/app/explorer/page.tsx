@@ -447,6 +447,16 @@ export default function ExplorerPage() {
                 </dl>
               )}
 
+              {selectedPoint && selectedPoint.outlier >= 0.95 && (
+                <p className="mt-2 border-l-2 border-bds pl-2 text-[11px] leading-relaxed text-ink3">
+                  Representation outlier: this protein lies unusually far from its
+                  nearest neighbors in the selected representation space (top{" "}
+                  {Math.max(1, Math.round((1 - selectedPoint.outlier) * 100))}% most
+                  isolated). A geometric statement about the embedding — not a
+                  biological anomaly claim.
+                </p>
+              )}
+
               <Link
                 href={`/protein/${encodeURIComponent(selectedId)}`}
                 className="mt-2 inline-block font-mono text-[11px] text-accent hover:underline"
