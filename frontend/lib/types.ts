@@ -200,3 +200,17 @@ export interface ClustersPayload {
   clustering: { n_clusters?: number; silhouette_cosine?: number; inertia?: number };
   clusters: ClusterSummary[];
 }
+
+export interface ComparePayload {
+  a: ProteinSummary;
+  b: ProteinSummary;
+  cosine_by_pooling: Record<string, number>;
+  sequence_identity: number;
+  same_family: boolean;
+  shared_pfam: string[];
+  a_domains: DomainFeature[];
+  b_domains: DomainFeature[];
+  note: string;
+}
+
+export type MapPreset = "default" | "local" | "global";

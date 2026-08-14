@@ -13,10 +13,12 @@ import type {
   AttentionPayload,
   BenchmarkPayload,
   ClustersPayload,
+  ComparePayload,
   DomainsPayload,
   Health,
   Landscape,
   MapPayload,
+  MapPreset,
   MutationResult,
   Pooling,
   ProteinProfile,
@@ -82,9 +84,13 @@ export async function getHealth(): Promise<Health> {
   return request<Health>("/health");
 }
 
-export async function getMap(pooling: Pooling = "mean"): Promise<MapPayload> {
-  if (!isLive) return demoFile<MapPayload>(`map_${pooling}.json`);
-  return request<MapPayload>(`/map?pooling=${pooling}`);
+export async function getMap(
+  pooling: Pooling = "mean",
+  preset: MapPreset = "default",
+): Promise<MapPayload> {
+  const suffix = preset === "default" ? "" : `_${preset}`;
+  if (!isLive) return demoFile<MapPayload>(`map_${pooling}${suffix}.json`);
+  return request<MapPayload>(`/map?pooling=${pooling}&preset=${preset}`);
 }
 
 /** Poolings for which a map projection exists. */
@@ -293,4 +299,14 @@ export async function trajectoryOf(
 export async function getClusters(pooling: Pooling = "mean"): Promise<ClustersPayload> {
   if (!isLive) return demoFile<ClustersPayload>(`clusters_${pooling}.json`);
   return request<ClustersPayload>(`/clusters?pooling=${pooling}`);
+}
+
+export async function compareProteins(a: string, b: string): Promise<ComparePayload> {
+  if (!isLive) {
+    throw new ApiError(501, "Pairwise comparison needs the live API.");
+  }
+  return request<ComparePayload>("/compare", {
+    method: "POST",
+    body: JSON.stringify({ a, b }),
+  });
 }
