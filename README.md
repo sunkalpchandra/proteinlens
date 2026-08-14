@@ -318,6 +318,26 @@ Results land in `reports/extended_benchmark.{csv,md}` and figures 09–10; the b
 renders them when present.
 
 <!-- EXTENDED:BEGIN -->
+Headline extended numbers (subset probes use the same leakage-aware splits):
+
+| representation | group | params (M) | probe F1 (mean) | P@1 (Pfam) | NMI |
+|---|---|---|---|---|---|
+| kmer3 | baseline | 0 | 0.319 | 0.399 | 0.437 |
+| onehot | baseline | 0 | 0.368 | 0.215 | 0.455 |
+| esm2-8M-bos | esm2-scaling | 8 | 0.476 | 0.416 | 0.473 |
+| esm2-8M-max | esm2-scaling | 8 | 0.452 | 0.658 | 0.477 |
+| esm2-8M-mean | esm2-scaling | 8 | 0.535 | 0.591 | 0.464 |
+| esm2-35M-bos | esm2-scaling | 35 | 0.499 | 0.497 | 0.455 |
+| esm2-35M-max | esm2-scaling | 35 | 0.479 | 0.778 | 0.474 |
+| esm2-35M-mean | esm2-scaling | 35 | 0.545 | 0.648 | 0.470 |
+| esm2-150M-bos | esm2-scaling | 150 | 0.547 | 0.550 | 0.469 |
+| esm2-150M-max | esm2-scaling | 150 | 0.513 | 0.805 | 0.455 |
+| esm2-150M-mean | esm2-scaling | 150 | 0.569 | 0.635 | 0.469 |
+| esm2-35M-attention | pooling-objective | 35 | 0.463 | 0.611 | 0.480 |
+| esm2-35M-attention-supcon | pooling-objective | 35 | 0.520 | 0.769 | 0.488 |
+| prostt5-mean | structure-aware | 1208 | 0.551 | 0.773 | 0.487 |
+
+Full tables: [`reports/extended_benchmark.md`](reports/extended_benchmark.md).
 <!-- EXTENDED:END --> Per-domain views run on 5,204 UniProt-curated DOMAIN coordinates:
 `GET /protein/{id}/domains` and `POST /region-search` embed an arbitrary residue span and query
 the corpus with it.

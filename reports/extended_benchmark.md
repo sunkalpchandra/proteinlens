@@ -17,5 +17,6 @@ Shared evaluation subset: 2997 proteins; probes use the corpus's leakage-aware s
 | esm2-150M-mean | esm2-scaling | 150 | 640 | 0.569 | 0.635 | 0.192 | 0.469 |
 | esm2-35M-attention | pooling-objective | 35 | 480 | 0.463 | 0.611 | 0.223 | 0.480 |
 | esm2-35M-attention-supcon | pooling-objective | 35 | 480 | 0.520 | 0.769 | 0.292 | 0.488 |
+| prostt5-mean | structure-aware | 1208 | 1024 | 0.551 | 0.773 | 0.242 | 0.487 |
 
 ProstT5 carries structure supervision (3Di translation training) and ~35× the parameters of ESM-2 35M — treat its rows as a reference point, not a like-for-like pooling comparison.

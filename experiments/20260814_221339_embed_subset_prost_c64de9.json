@@ -1,0 +1,14 @@
+{
+  "experiment_id": "20260814_221339_embed_subset_prost_c64de9",
+  "kind": "embed_subset_prost",
+  "created_at": "2026-08-14T22:13:39.718539+00:00",
+  "git_commit": "6c9a65470481d1b3aa38694e2c5958fd6af473e9",
+  "config": {
+    "n": 2997,
+    "chunk": 4,
+    "limit": null
+  },
+  "metrics": {
+    "wall_time_s": 2679.0
+  }
+}
