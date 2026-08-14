@@ -39,7 +39,7 @@ class SearchRequest(BaseModel):
     k: int = Field(10, ge=1, le=100)
 
     @model_validator(mode="after")
-    def exactly_one_query(self) -> "SearchRequest":
+    def exactly_one_query(self) -> SearchRequest:
         if bool(self.sequence) == bool(self.accession):
             raise ValueError("Provide exactly one of 'sequence' or 'accession'.")
         return self
@@ -97,7 +97,7 @@ class MutationRequest(BaseModel):
     pooling: Pooling = "mean"
 
     @model_validator(mode="after")
-    def exactly_one_target(self) -> "MutationRequest":
+    def exactly_one_target(self) -> MutationRequest:
         if bool(self.sequence) == bool(self.accession):
             raise ValueError("Provide exactly one of 'sequence' or 'accession'.")
         return self
@@ -126,7 +126,7 @@ class LandscapeRequest(BaseModel):
     pooling: Pooling = "mean"
 
     @model_validator(mode="after")
-    def exactly_one_target(self) -> "LandscapeRequest":
+    def exactly_one_target(self) -> LandscapeRequest:
         if bool(self.sequence) == bool(self.accession):
             raise ValueError("Provide exactly one of 'sequence' or 'accession'.")
         return self

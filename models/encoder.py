@@ -122,13 +122,13 @@ class ESM2Encoder:
         for idx in order:
             candidate_max = max(max_len, len(sequences[idx]) + 2)  # +BOS/EOS
             if chunk and candidate_max * (len(chunk) + 1) > self.token_budget:
-                for j, enc in zip(chunk, self._forward([sequences[j] for j in chunk])):
+                for j, enc in zip(chunk, self._forward([sequences[j] for j in chunk]), strict=True):
                     results[j] = enc
                 chunk, max_len = [], 0
                 candidate_max = len(sequences[idx]) + 2
             chunk.append(idx)
             max_len = candidate_max
         if chunk:
-            for j, enc in zip(chunk, self._forward([sequences[j] for j in chunk])):
+            for j, enc in zip(chunk, self._forward([sequences[j] for j in chunk]), strict=True):
                 results[j] = enc
         return results  # type: ignore[return-value]

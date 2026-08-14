@@ -25,7 +25,6 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 import time
 from pathlib import Path
@@ -92,7 +91,7 @@ def sequence_vs_embedding(
     index.add(emb)
     seeds = rng.choice(n, size=n_pairs // 8, replace=False)
     _, rows = index.search(emb[seeds], 5)
-    for s, row in zip(seeds, rows):
+    for s, row in zip(seeds, rows, strict=True):
         for r in row[1:]:
             pairs.add((min(int(s), int(r)), max(int(s), int(r))))
 

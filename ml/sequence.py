@@ -131,5 +131,5 @@ def sequence_identity(a: str, b: str) -> float:
     aligner.mode = "global"
     alignment = aligner.align(a, b)[0]
     aligned_a, aligned_b = alignment[0], alignment[1]
-    matches = sum(1 for x, y in zip(aligned_a, aligned_b) if x == y and x != "-")
+    matches = sum(1 for x, y in zip(aligned_a, aligned_b, strict=True) if x == y and x != "-")
     return matches / max(len(aligned_a), 1)

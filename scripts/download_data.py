@@ -19,7 +19,7 @@ import hashlib
 import json
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import requests
@@ -152,7 +152,7 @@ def main() -> int:
         "fields": FIELDS,
         "min_length": args.min_length,
         "max_length": args.max_length,
-        "downloaded_at": datetime.now(timezone.utc).isoformat(),
+        "downloaded_at": datetime.now(UTC).isoformat(),
         "files": entries,
         "total_rows": sum(e["rows"] for e in entries),
     }

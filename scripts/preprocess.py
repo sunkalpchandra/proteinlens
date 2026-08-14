@@ -20,7 +20,7 @@ import argparse
 import json
 import re
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -221,7 +221,7 @@ def main() -> int:
 
     raw_manifest = json.loads((args.raw / "manifest.json").read_text())
     manifest = {
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(UTC).isoformat(),
         "uniprot_release": raw_manifest["files"][0]["uniprot_release"],
         "seed": args.seed,
         "target": args.target,

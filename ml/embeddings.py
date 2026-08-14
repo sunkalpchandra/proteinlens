@@ -25,11 +25,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
-import torch
 
+from ml.sequence import validate_sequence
 from models.encoder import DEFAULT_MODEL, EncodedProtein, ESM2Encoder
 from models.pooling import AttentionPooling, Pooler
-from ml.sequence import validate_sequence
 
 EMBEDDING_VERSION = "1"
 

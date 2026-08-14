@@ -13,7 +13,6 @@ import os
 import threading
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 from ml.embeddings import EmbeddingPipeline, EmbeddingStore

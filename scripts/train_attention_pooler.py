@@ -28,10 +28,10 @@ from torch import nn
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from ml.splitting import load_splits            # noqa: E402
-from ml.tracking import log_experiment          # noqa: E402
+from ml.splitting import load_splits  # noqa: E402
+from ml.tracking import log_experiment  # noqa: E402
 from models.encoder import ESM2Encoder, resolve_device  # noqa: E402
-from models.pooling import AttentionPooling     # noqa: E402
+from models.pooling import AttentionPooling  # noqa: E402
 
 
 def pad_batch(tensors: list[torch.Tensor]) -> tuple[torch.Tensor, torch.Tensor]:

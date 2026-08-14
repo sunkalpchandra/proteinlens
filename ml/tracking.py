@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 import subprocess
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 
@@ -32,7 +32,7 @@ def log_experiment(
 ) -> Path:
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
-    stamp = datetime.now(timezone.utc)
+    stamp = datetime.now(UTC)
     experiment_id = f"{stamp.strftime('%Y%m%d_%H%M%S')}_{kind}_{uuid.uuid4().hex[:6]}"
     payload = {
         "experiment_id": experiment_id,

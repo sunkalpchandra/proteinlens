@@ -193,7 +193,7 @@ def fig_probes(bench: pd.DataFrame) -> None:
     tasks = ["enzyme_vs_nonenzyme", "ec_class", "subcellular_localization"]
     titles = ["enzyme vs non-enzyme", "EC top class", "subcellular localization"]
     fig, axes = plt.subplots(1, 3, figsize=(9.6, 3.4), sharey=False)
-    for ax, task, title in zip(axes, tasks, titles):
+    for ax, task, title in zip(axes, tasks, titles, strict=True):
         sub = probes[probes.task == task].set_index("representation").reindex(REP_ORDER)
         vals = sub["macro_f1"].to_numpy(dtype=float)
         colors = [rep_color(r) for r in sub.index]

@@ -90,7 +90,7 @@ def make_splits(
     order = sizes.sample(frac=1.0, random_state=seed).sort_values(ascending=False, kind="stable")
 
     names = ("train", "val", "test")
-    targets = {name: ratio * len(df) for name, ratio in zip(names, ratios)}
+    targets = {name: ratio * len(df) for name, ratio in zip(names, ratios, strict=True)}
     filled = dict.fromkeys(names, 0)
     assignment: dict[str, str] = {}
     for group, size in order.items():
@@ -141,7 +141,7 @@ def audit_leakage(
                 feats[i] = v / max(np.linalg.norm(v), 1e-12)
             return feats[i]
 
-        for n, (i, j) in enumerate(zip(rows_a, rows_b)):
+        for n, (i, j) in enumerate(zip(rows_a, rows_b, strict=True)):
             sims[n] = float(np.dot(feat(int(i)), feat(int(j))))
         return sims
 
@@ -168,7 +168,7 @@ def audit_leakage(
 def save_splits(splits: pd.Series, df: pd.DataFrame, summary: dict, path: str | Path) -> None:
     payload = {
         "summary": summary,
-        "splits": dict(zip(df["accession"], splits)),
+        "splits": dict(zip(df["accession"], splits, strict=True)),
     }
     Path(path).write_text(json.dumps(payload, indent=2))
 

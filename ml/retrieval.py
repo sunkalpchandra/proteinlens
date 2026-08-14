@@ -35,7 +35,7 @@ class ProteinIndex:
 
     # -- construction ------------------------------------------------------
     @classmethod
-    def build(cls, embeddings: np.ndarray, accessions: list[str], pooling: str) -> "ProteinIndex":
+    def build(cls, embeddings: np.ndarray, accessions: list[str], pooling: str) -> ProteinIndex:
         if embeddings.shape[0] != len(accessions):
             raise ValueError("embeddings/accessions length mismatch")
         normalized = l2_normalize(np.ascontiguousarray(embeddings, dtype=np.float32))
@@ -52,7 +52,7 @@ class ProteinIndex:
         )
 
     @classmethod
-    def load(cls, directory: str | Path, pooling: str) -> "ProteinIndex":
+    def load(cls, directory: str | Path, pooling: str) -> ProteinIndex:
         directory = Path(directory)
         index_path = directory / f"index_{pooling}.faiss"
         if not index_path.exists():
@@ -67,7 +67,7 @@ class ProteinIndex:
         # +1 so that excluding the query protein itself still yields k hits.
         scores, rows = self.index.search(q, min(k + 1, self.index.ntotal))
         hits: list[SearchHit] = []
-        for score, row in zip(scores[0], rows[0]):
+        for score, row in zip(scores[0], rows[0], strict=True):
             if row < 0:
                 continue
             accession = self.accessions[row]

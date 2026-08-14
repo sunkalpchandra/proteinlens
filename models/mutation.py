@@ -155,7 +155,7 @@ class MutationAnalyzer:
 
         encoded = self.pipeline.encoder.encode_batch(list(mutants.values()))
         effects = []
-        for aa, enc in zip(mutants, encoded):
+        for aa, enc in zip(mutants, encoded, strict=True):
             pooled, _ = self.pipeline.pooler.pool(
                 enc.residue_embeddings, enc.bos_embedding, pooling
             )

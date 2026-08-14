@@ -29,10 +29,10 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from ml.clustering import cluster_summaries, kmeans_clusters, outlier_scores  # noqa: E402
-from ml.embeddings import EmbeddingStore     # noqa: E402
+from ml.embeddings import EmbeddingStore  # noqa: E402
 from ml.projection import ProjectionCache, ProjectionParams  # noqa: E402
-from ml.retrieval import ProteinIndex        # noqa: E402
-from ml.tracking import log_experiment       # noqa: E402
+from ml.retrieval import ProteinIndex  # noqa: E402
+from ml.tracking import log_experiment  # noqa: E402
 
 MAP_COLUMNS = [
     "accession", "protein_name", "gene", "organism_short", "length",

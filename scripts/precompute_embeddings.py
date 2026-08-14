@@ -23,7 +23,7 @@ import hashlib
 import json
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -32,9 +32,9 @@ import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from ml.embeddings import EMBEDDING_VERSION      # noqa: E402
-from ml.tracking import log_experiment           # noqa: E402
-from models.encoder import ESM2Encoder           # noqa: E402
+from ml.embeddings import EMBEDDING_VERSION  # noqa: E402
+from ml.tracking import log_experiment  # noqa: E402
+from models.encoder import ESM2Encoder  # noqa: E402
 from models.pooling import AttentionPooling, Pooler  # noqa: E402
 
 
@@ -92,7 +92,7 @@ def main() -> int:
         "corpus_file": str(args.corpus),
         "corpus_sha256_16": corpus_hash,
         "device": str(encoder.device),
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(UTC).isoformat(),
         "wall_time_s": round(time.time() - t0, 1),
     }
     (args.out / "store_meta.json").write_text(json.dumps(meta, indent=2))
