@@ -297,11 +297,31 @@ proteinlens/
 - Attention pooling was trained on family classification; its weights reflect that objective.
 - No structural (3D) information is used anywhere.
 
+## Extended studies
+
+Beyond the core benchmark, the repo carries four comparative studies on a shared, stratified
+~3k-protein evaluation subset (`make extended` reproduces all of them):
+
+- **Checkpoint scaling** — ESM-2 8M / 35M / 150M through one registry-driven interface
+  (`models/registry.py`), with per-checkpoint token budgets sized by attention memory.
+- **Pooling objectives** — the attention pooler trained with cross-entropy vs supervised
+  contrastive loss (SupCon optimizes the cosine geometry retrieval actually uses; early stopping
+  on holdout 1-NN accuracy).
+- **Structure-aware reference** — the ProstT5 encoder (3Di-supervised, ~1.2B params, fp16) as a
+  representation baseline, labeled as a reference point rather than a like-for-like comparison.
+- **Index scaling** — flat/HNSW/IVF backends benchmarked to 150k vectors
+  (`reports/ann_benchmark.md`), with automatic backend selection at 50k.
+
+Results land in `reports/extended_benchmark.{csv,md}` and figures 09–10; the benchmarks page
+renders them when present. Per-domain views run on 5,204 UniProt-curated DOMAIN coordinates:
+`GET /protein/{id}/domains` and `POST /region-search` embed an arbitrary residue span and query
+the corpus with it.
+
 ## Future work
 
-Larger checkpoints behind the same interface · MMseqs2-based identity splits · structure-aware
-baselines (e.g., ProstT5 tokens) · contrastive fine-tuning of the pooler · ANN indexes past 100k
-proteins · per-domain embedding views.
+InterPro-backed domain coordinates for full corpus coverage · product-quantized indexes past 1M
+vectors · ESM-C / larger checkpoints on GPU hosts · validating representation displacement
+against deep mutational scanning data · multi-checkpoint serving behind one API.
 
 ## License
 
