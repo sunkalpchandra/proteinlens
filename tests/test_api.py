@@ -183,3 +183,13 @@ class TestCompare:
 
     def test_compare_unknown_accession_404(self, client):
         assert client.post("/compare", json={"a": "T0000", "b": "NOPE"}).status_code == 404
+
+
+class TestStats:
+    def test_stats_snapshot(self, client):
+        body = client.get("/stats").json()
+        assert body["corpus_size"] == 12
+        assert body["n_with_domains"] == 1  # T0000 carries the fixture domains
+        assert body["index_backend"] == "flat"
+        assert body["encoder_loaded"] is False
+        assert body["adhoc_cache_entries"] == 0
