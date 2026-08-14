@@ -33,8 +33,16 @@ from models.pooling import AttentionPooling, Pooler
 EMBEDDING_VERSION = "1"
 
 
-def embedding_cache_key(sequence: str, model_name: str, pooling: str) -> str:
-    payload = f"{model_name}|{pooling}|v{EMBEDDING_VERSION}|{sequence}"
+def embedding_cache_key(
+    sequence: str, model_name: str, pooling: str, pooler_fingerprint: str | None = None
+) -> str:
+    """Cache key for a pooled embedding.
+
+    ``pooler_fingerprint`` MUST be supplied for parameterized poolings
+    (attention): the vector depends on the trained pooler weights, so a
+    retrained pooler must miss the cache rather than serve stale vectors.
+    """
+    payload = f"{model_name}|{pooling}|v{EMBEDDING_VERSION}|{pooler_fingerprint or '-'}|{sequence}"
     return hashlib.sha256(payload.encode()).hexdigest()
 
 
@@ -128,9 +136,16 @@ class EmbeddingPipeline:
     ) -> None:
         self.encoder = ESM2Encoder(model_name, device=device)
         pooler_path = Path(attention_pooler_path) if attention_pooler_path else None
-        attention = (
-            AttentionPooling.load(pooler_path) if pooler_path and pooler_path.exists() else None
-        )
+        if pooler_path and pooler_path.exists():
+            attention = AttentionPooling.load(pooler_path)
+            # Weights determine attention-pooled vectors; the fingerprint keys
+            # the cache so a retrained pooler invalidates old entries.
+            self.pooler_fingerprint: str | None = hashlib.sha256(
+                pooler_path.read_bytes()
+            ).hexdigest()[:16]
+        else:
+            attention = None
+            self.pooler_fingerprint = None
         self.pooler = Pooler(attention)
         self.cache = SqliteVectorCache(cache_path) if cache_path else None
         self.residue_lru = ResidueLRU(residue_lru_size)
@@ -161,7 +176,12 @@ class EmbeddingPipeline:
         with_residues: bool = False,
     ) -> EmbeddingResult:
         seq = validate_sequence(sequence)
-        cache_key = embedding_cache_key(seq, self.model_name, pooling)
+        cache_key = embedding_cache_key(
+            seq,
+            self.model_name,
+            pooling,
+            self.pooler_fingerprint if pooling == "attention" else None,
+        )
 
         if not with_residues and self.cache is not None:
             hit = self.cache.get(cache_key)
