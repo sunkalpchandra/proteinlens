@@ -66,12 +66,15 @@ def main() -> int:
     print(f"Embedding {len(subset)} proteins with {args.model} "
           f"({spec.params_m}M params, {encoder.hidden_size}-d) on {encoder.device}")
     t0 = time.time()
-    for start in range(0, len(subset), args.chunk):
-        encoded = encoder.encode_batch(sequences[start : start + args.chunk])
-        for offset, enc in enumerate(encoded):
+    # Global length sort: every chunk is near-uniform length, minimizing padding.
+    order = sorted(range(len(subset)), key=lambda i: len(sequences[i]))
+    for start in range(0, len(order), args.chunk):
+        idx = order[start : start + args.chunk]
+        encoded = encoder.encode_batch([sequences[i] for i in idx])
+        for row, enc in zip(idx, encoded, strict=True):
             for pooling in poolings:
                 vec, _ = pooler.pool(enc.residue_embeddings, enc.bos_embedding, pooling)
-                matrices[pooling][start + offset] = vec.numpy()
+                matrices[pooling][row] = vec.numpy()
         done = min(start + args.chunk, len(subset))
         rate = done / (time.time() - t0)
         print(f"  {done:>5}/{len(subset)}  {rate:5.1f}/s  "

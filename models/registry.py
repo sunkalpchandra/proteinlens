@@ -35,8 +35,10 @@ class ModelSpec:
 REGISTRY: dict[str, ModelSpec] = {
     spec.hf_id: spec
     for spec in [
+        # Token budgets are bounded by attention-activation memory (∝ batch·L²),
+        # not weights — small models don't get to run huge batches on 8GB hosts.
         ModelSpec("facebook/esm2_t6_8M_UR50D", "esm2_t6_8M", "esm2",
-                  8, 320, 6, 0.03, 2, 32768),
+                  8, 320, 6, 0.03, 2, 16384),
         ModelSpec("facebook/esm2_t12_35M_UR50D", "esm2_t12_35M", "esm2",
                   35, 480, 12, 0.14, 4, 16384,
                   "default serving checkpoint"),
