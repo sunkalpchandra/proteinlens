@@ -206,9 +206,11 @@ Environment knobs: `PROTEINLENS_MODEL` (any ESM-2 checkpoint), `PROTEINLENS_DEVI
 
 ## API
 
-`GET /health` · `POST /embed` · `POST /search` · `GET /proteins?q=` · `GET /protein/{id}` ·
-`GET /protein/{id}/attention` · `POST /mutation` · `POST /mutation-landscape` · `GET /map` ·
-`GET /clusters` · `GET /benchmark`
+`GET /health` · `GET /stats` · `POST /embed` · `POST /search` · `POST /region-search` ·
+`POST /compare` · `GET /proteins?q=` · `GET /protein/{id}` · `GET /protein/{id}/attention` ·
+`GET /protein/{id}/domains` · `POST /mutation` · `POST /mutation-landscape` ·
+`POST /trajectory` · `GET /map?preset=default|local|global` · `GET /clusters` ·
+`GET /benchmark`
 
 Pydantic schemas validate everything; invalid amino-acid symbols return a clean 422 with the
 offending characters named. Missing artifacts return 503 with the script to run. No filesystem
@@ -313,7 +315,10 @@ Beyond the core benchmark, the repo carries four comparative studies on a shared
   (`reports/ann_benchmark.md`), with automatic backend selection at 50k.
 
 Results land in `reports/extended_benchmark.{csv,md}` and figures 09–10; the benchmarks page
-renders them when present. Per-domain views run on 5,204 UniProt-curated DOMAIN coordinates:
+renders them when present.
+
+<!-- EXTENDED:BEGIN -->
+<!-- EXTENDED:END --> Per-domain views run on 5,204 UniProt-curated DOMAIN coordinates:
 `GET /protein/{id}/domains` and `POST /region-search` embed an arbitrary residue span and query
 the corpus with it.
 

@@ -70,8 +70,44 @@ def main() -> int:
     text = re.sub(re.escape(BEGIN) + r".*?" + re.escape(END), block, text, flags=re.S)
     readme.write_text(text)
     print("README results block updated.")
+    update_extended()
     return 0
 
 
 if __name__ == "__main__":
     sys.exit(main())
+
+
+EXT_BEGIN = "<!-- EXTENDED:BEGIN -->"
+EXT_END = "<!-- EXTENDED:END -->"
+
+
+def build_extended_block(table: pd.DataFrame) -> str:
+    lines = [
+        "Headline extended numbers (subset probes use the same leakage-aware splits):",
+        "",
+        "| representation | group | params (M) | probe F1 (mean) | P@1 (Pfam) | NMI |",
+        "|---|---|---|---|---|---|",
+    ]
+    ordered = table.sort_values(["group", "params_m", "representation"])
+    for r in ordered.itertuples():
+        lines.append(
+            f"| {r.representation} | {r.group} | {r.params_m} "
+            f"| {r.probe_f1_mean:.3f} | {r.p_at_1:.3f} | {r.nmi:.3f} |"
+        )
+    lines += ["", "Full tables: [`reports/extended_benchmark.md`](reports/extended_benchmark.md)."]
+    return "\n".join(lines)
+
+
+def update_extended() -> None:
+    path = Path("reports/extended_benchmark.csv")
+    readme = Path("README.md")
+    text = readme.read_text()
+    if EXT_BEGIN not in text:
+        return
+    if not path.exists():
+        return
+    block = f"{EXT_BEGIN}\n{build_extended_block(pd.read_csv(path))}\n{EXT_END}"
+    text = re.sub(re.escape(EXT_BEGIN) + r".*?" + re.escape(EXT_END), block, text, flags=re.S)
+    readme.write_text(text)
+    print("README extended block updated.")
