@@ -93,16 +93,23 @@ class AppState:
     def encoder_loaded(self) -> bool:
         return self._pipeline is not None
 
-    def domains_for(self, accession: str) -> list[dict]:
-        """UniProt-curated DOMAIN features; empty when no data file exists."""
+    def _domains_frame(self) -> pd.DataFrame:
         if self._domains is None:
             if self.domains_path.exists():
                 self._domains = pd.read_parquet(self.domains_path)
             else:
                 self._domains = pd.DataFrame(columns=["accession", "name", "start", "end"])
-        rows = self._domains[self._domains["accession"] == accession]
+        return self._domains
+
+    def domains_for(self, accession: str) -> list[dict]:
+        """UniProt-curated DOMAIN features; empty when no data file exists."""
+        frame = self._domains_frame()
+        rows = frame[frame["accession"] == accession]
         return [{"name": r.name_, "start": int(r.start), "end": int(r.end)}
                 for r in rows.rename(columns={"name": "name_"}).itertuples()]
+
+    def n_proteins_with_domains(self) -> int:
+        return int(self._domains_frame()["accession"].nunique())
 
     # -- helpers ----------------------------------------------------------
     def protein_row(self, accession: str) -> pd.Series:

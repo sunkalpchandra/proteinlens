@@ -270,3 +270,15 @@ class CompareResponse(BaseModel):
         "high cosine at low sequence identity marks representation-space "
         "neighbors, not evidence of homology or shared function."
     )
+
+
+class StatsResponse(BaseModel):
+    corpus_size: int
+    n_families: int
+    n_with_domains: int
+    poolings: list[str]
+    index_backend: str
+    adhoc_cache_entries: int
+    encoder_loaded: bool
+    embeddings_created_at: str | None
+    appended_proteins: list[str]

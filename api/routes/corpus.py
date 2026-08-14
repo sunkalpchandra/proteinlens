@@ -8,7 +8,7 @@ import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse, Response
 
-from api.schemas import HealthResponse
+from api.schemas import HealthResponse, StatsResponse
 from api.state import AppState, get_state
 
 router = APIRouter(tags=["corpus"])
@@ -85,3 +85,26 @@ def benchmark(state: AppState = Depends(get_state)) -> JSONResponse:
             pd.read_csv(extended_path).to_json(orient="records")
         )
     return JSONResponse(payload)
+
+
+@router.get("/stats", response_model=StatsResponse)
+def stats(state: AppState = Depends(get_state)) -> StatsResponse:
+    """Operational snapshot: corpus composition, cache size, artifact vintage."""
+    cache_path = state.embeddings_dir / "adhoc_cache.sqlite"
+    cache_entries = 0
+    if cache_path.exists():
+        from ml.embeddings import SqliteVectorCache
+
+        cache_entries = len(SqliteVectorCache(cache_path))
+
+    return StatsResponse(
+        corpus_size=len(state.df),
+        n_families=int(state.df["family"].nunique()),
+        n_with_domains=state.n_proteins_with_domains(),
+        poolings=state.store.poolings,
+        index_backend=state.index("mean").backend,
+        adhoc_cache_entries=cache_entries,
+        encoder_loaded=state.encoder_loaded,
+        embeddings_created_at=state.store.meta.get("created_at"),
+        appended_proteins=state.store.meta.get("appended", []),
+    )
