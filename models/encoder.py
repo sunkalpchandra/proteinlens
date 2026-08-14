@@ -91,6 +91,11 @@ class ESM2Encoder:
         special_mask = batch.pop("special_tokens_mask").bool()
         batch = {k: v.to(self.device) for k, v in batch.items()}
         hidden = self.model(**batch).last_hidden_state.float().cpu()  # [B, T, D]
+        if self.device.type == "mps":
+            # The MPS caching allocator accumulates across long runs and tips
+            # 8GB unified hosts into OOM mid-corpus; releasing after each
+            # forward costs ~ms and bounds the footprint to one batch.
+            torch.mps.empty_cache()
 
         outputs: list[EncodedProtein] = []
         attention_mask = batch["attention_mask"].bool().cpu()
