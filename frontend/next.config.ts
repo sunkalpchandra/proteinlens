@@ -12,6 +12,9 @@ const nextConfig: NextConfig = {
   basePath,
   trailingSlash: true, // directory/index.html URLs — robust on GitHub Pages
   images: { unoptimized: true },
+  // A stray lockfile in the home directory otherwise makes Next infer the
+  // wrong workspace root for file tracing.
+  outputFileTracingRoot: __dirname,
 };
 
 export default nextConfig;
