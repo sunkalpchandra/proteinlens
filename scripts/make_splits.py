@@ -27,10 +27,13 @@ def main() -> int:
     parser.add_argument("--out", type=Path, default=Path("data/processed/splits.json"))
     parser.add_argument("--ratios", type=float, nargs=3, default=(0.70, 0.15, 0.15))
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--method", choices=["annotation", "mmseqs"], default="annotation",
+                        help="grouping: annotation union-find (default) or MMseqs2 "
+                             "30%%-identity clusters (requires the mmseqs binary)")
     args = parser.parse_args()
 
     df = pd.read_parquet(args.corpus)
-    splits, summary = make_splits(df, tuple(args.ratios), args.seed)
+    splits, summary = make_splits(df, tuple(args.ratios), args.seed, method=args.method)
     print("Split sizes:", summary["split_sizes"])
     print("Grouping:", summary["group_stats"])
 
