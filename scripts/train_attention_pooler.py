@@ -130,12 +130,18 @@ def main() -> int:
     print(f"Pooler training set: {len(sampled)} proteins, {len(classes)} family classes")
 
     # --- Encode once with the frozen LM, keep residue embeddings in RAM -----
-    # Half the registry budget: this process also holds every residue tensor,
-    # and full-budget attention spikes tip 8GB unified memory into MPS OOM.
-    encoder = ESM2Encoder(args.model, token_budget=8192)
+    # Memory discipline for 8GB unified hosts: small token budget, chunked
+    # encoding with MPS cache flushes between chunks, and fp16 residue storage
+    # (the RAM-side cache halves; training upcasts per batch).
+    encoder = ESM2Encoder(args.model, token_budget=4096)
     t0 = time.time()
-    encoded = encoder.encode_batch(sampled["sequence"].tolist())
-    residue_sets = [e.residue_embeddings for e in encoded]
+    sequences = sampled["sequence"].tolist()
+    residue_sets: list[torch.Tensor] = []
+    for start in range(0, len(sequences), 128):
+        for enc in encoder.encode_batch(sequences[start : start + 128]):
+            residue_sets.append(enc.residue_embeddings.half())
+        if encoder.device.type == "mps":
+            torch.mps.empty_cache()
     print(f"Encoded in {time.time() - t0:.1f}s on {encoder.device}")
 
     # --- Stratified within-train holdout for early stopping ------------------
@@ -159,7 +165,7 @@ def main() -> int:
     ce_loss = nn.CrossEntropyLoss()
 
     def pool_batch(batch_idx: np.ndarray, grad: bool) -> torch.Tensor:
-        padded, mask = pad_batch([residue_sets[i] for i in batch_idx])
+        padded, mask = pad_batch([residue_sets[i].float() for i in batch_idx])
         padded, mask = padded.to(device), mask.to(device)
         with torch.set_grad_enabled(grad):
             pooled, _ = pooler(padded, mask)
