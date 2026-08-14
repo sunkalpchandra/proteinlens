@@ -119,6 +119,8 @@ export interface BenchmarkPayload {
   rows: BenchmarkRow[];
   seq_vs_emb?: { a: string; b: string; identity: number; cosine: number; same_family: boolean }[];
   markdown?: string;
+  /** Extended study rows (checkpoint scaling, pooling objectives, ProstT5). */
+  extended?: ExtendedBenchmarkRow[];
 }
 
 export interface Health {
@@ -128,4 +130,39 @@ export interface Health {
   poolings: Pooling[];
   device: string;
   encoder_loaded: boolean;
+}
+
+export interface DomainFeature {
+  name: string;
+  start: number; // 1-based, inclusive
+  end: number;
+}
+
+export interface DomainsPayload {
+  accession: string;
+  length: number;
+  domains: DomainFeature[];
+  note: string;
+}
+
+export interface RegionSearchPayload {
+  accession: string;
+  start: number;
+  end: number;
+  span_length: number;
+  hits: SearchHit[];
+  note: string;
+}
+
+export interface ExtendedBenchmarkRow {
+  representation: string;
+  group: "esm2-scaling" | "pooling-objective" | "structure-aware" | "baseline";
+  params_m: number;
+  pooling: string;
+  dim: number;
+  probe_f1_mean: number;
+  p_at_1: number;
+  p_at_10: number;
+  nmi: number;
+  [metric: string]: string | number;
 }

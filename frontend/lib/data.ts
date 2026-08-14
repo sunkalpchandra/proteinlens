@@ -12,6 +12,7 @@
 import type {
   AttentionPayload,
   BenchmarkPayload,
+  DomainsPayload,
   Health,
   Landscape,
   MapPayload,
@@ -19,6 +20,7 @@ import type {
   Pooling,
   ProteinProfile,
   ProteinSummary,
+  RegionSearchPayload,
   SearchHit,
 } from "./types";
 
@@ -239,4 +241,35 @@ export async function getAttention(accession: string): Promise<AttentionPayload>
 export async function getBenchmark(): Promise<BenchmarkPayload> {
   if (!isLive) return demoFile<BenchmarkPayload>("benchmark.json");
   return request<BenchmarkPayload>("/benchmark");
+}
+
+export async function getDomains(accession: string): Promise<DomainsPayload> {
+  if (!isLive) {
+    // Demo bundles inline curated domains on the profile payload.
+    const profile = (await getProfile(accession)) as ProteinProfile & {
+      domains?: DomainsPayload["domains"];
+    };
+    return {
+      accession,
+      length: profile.sequence.length,
+      domains: profile.domains ?? [],
+      note: "UniProt-curated DOMAIN features; coverage is partial.",
+    };
+  }
+  return request<DomainsPayload>(`/protein/${encodeURIComponent(accession)}/domains`);
+}
+
+export async function regionSearch(
+  accession: string,
+  start: number,
+  end: number,
+  k = 10,
+): Promise<RegionSearchPayload> {
+  if (!isLive) {
+    throw new ApiError(501, "Region search needs the live API (ESM inference).");
+  }
+  return request<RegionSearchPayload>("/region-search", {
+    method: "POST",
+    body: JSON.stringify({ accession, start, end, k }),
+  });
 }
