@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use ProteinLens in your work, please cite it as below."
+title: "ProteinLens: an interactive platform for exploring protein language-model representations"
+authors:
+  - family-names: Chandra
+    given-names: Sunkalp
+repository-code: "https://github.com/sunkalpchandra/proteinlens"
+url: "https://sunkalpchandra.github.io/proteinlens/"
+license: MIT
+keywords:
+  - protein language models
+  - ESM-2
+  - representation learning
+  - bioinformatics
+references:
+  - type: article
+    title: "Language models of protein sequences at the scale of evolution enable accurate structure prediction"
+    authors:
+      - family-names: Lin
+        given-names: Zeming
+    notes: "ESM-2; Lin et al. 2022, bioRxiv 2022.07.20.500902"
+  - type: article
+    title: "The UniProt Consortium: UniProt: the Universal Protein Knowledgebase"
+    authors:
+      - name: "The UniProt Consortium"
+    notes: "Corpus data, CC BY 4.0"
