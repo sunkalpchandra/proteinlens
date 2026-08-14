@@ -28,13 +28,24 @@ def health(state: AppState = Depends(get_state)) -> HealthResponse:
     )
 
 
+MAP_PRESET_NAMES = ("default", "local", "global")
+
+
 @router.get("/map")
 def embedding_map(
-    pooling: str = Query("mean"), state: AppState = Depends(get_state)
+    pooling: str = Query("mean"),
+    preset: str = Query("default"),
+    state: AppState = Depends(get_state),
 ) -> Response:
-    path = state.index_dir / f"map_{pooling}.json"
+    if preset not in MAP_PRESET_NAMES:
+        raise HTTPException(422, f"Unknown preset '{preset}'. Options: {MAP_PRESET_NAMES}")
+    suffix = "" if preset == "default" else f"_{preset}"
+    path = state.index_dir / f"map_{pooling}{suffix}.json"
     if not path.exists():
-        raise HTTPException(404, f"No map payload for pooling '{pooling}'. Run scripts/build_index.py.")
+        raise HTTPException(
+            404,
+            f"No map payload for pooling '{pooling}' preset '{preset}'. Run scripts/build_index.py.",
+        )
     # Serve the prebuilt file verbatim — no per-request recomputation.
     return Response(content=path.read_bytes(), media_type="application/json")
 
