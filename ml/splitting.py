@@ -2,16 +2,19 @@
 
 Random splits of protein datasets leak: homologous sequences land on both sides
 and probe metrics become homology detection, not representation quality. We
-split by *group*, where a group is:
-
-  1. the UniProt family annotation when present,
-  2. else the primary Pfam domain,
-  3. else a greedy 5-mer Jaccard cluster (threshold 0.5) over the remainder.
+split by *group*, where groups are connected components of a union-find over
+annotation tokens: every protein links its UniProt family label and **all** of
+its Pfam domains, so two proteins sharing a domain end up in one group even
+when only one of them carries a family annotation (tiered fallbacks would leak
+exactly those pairs). Unannotated proteins join the group of their most
+similar annotated protein when 5-mer Jaccard ≥ 0.5, otherwise they form greedy
+k-mer clusters among themselves.
 
 All members of a group share a split. This is a pragmatic middle ground — it
 does not replace a profile-HMM or MMseqs2 identity clustering, and remote
-cross-family homology can still cross splits; ``audit_leakage`` quantifies the
-residual risk by sampling cross-split pairs and measuring k-mer similarity.
+homology with no shared Pfam annotation can still cross splits;
+``audit_leakage`` quantifies the residual risk by sampling cross-split pairs
+and measuring k-mer similarity.
 """
 
 from __future__ import annotations
@@ -25,48 +28,102 @@ import pandas as pd
 from ml.sequence import kmer_features
 
 
-def _jaccard_clusters(sequences: list[str], k: int = 5, threshold: float = 0.5) -> list[int]:
-    """Greedy single-linkage clustering on k-mer set Jaccard similarity."""
-    kmer_sets = [
-        {seq[i : i + k] for i in range(len(seq) - k + 1)} for seq in sequences
-    ]
-    labels = [-1] * len(sequences)
-    next_label = 0
-    for i in range(len(sequences)):
-        if labels[i] != -1:
-            continue
-        labels[i] = next_label
-        for j in range(i + 1, len(sequences)):
-            if labels[j] != -1:
-                continue
-            inter = len(kmer_sets[i] & kmer_sets[j])
-            union = len(kmer_sets[i] | kmer_sets[j])
-            if union and inter / union >= threshold:
-                labels[j] = next_label
-        next_label += 1
-    return labels
+def _kmer_set(sequence: str, k: int = 5) -> set[str]:
+    return {sequence[i : i + k] for i in range(len(sequence) - k + 1)}
 
 
-def assign_groups(df: pd.DataFrame) -> tuple[pd.Series, dict]:
-    """Group id per protein using family → Pfam → k-mer cluster fallback."""
+def _jaccard(a: set[str], b: set[str]) -> float:
+    if not a or not b:
+        return 0.0
+    inter = len(a & b)
+    return inter / (len(a) + len(b) - inter)
+
+
+class _UnionFind:
+    def __init__(self) -> None:
+        self.parent: dict[str, str] = {}
+
+    def find(self, x: str) -> str:
+        root = x
+        while self.parent.setdefault(root, root) != root:
+            root = self.parent[root]
+        while self.parent[x] != root:  # path compression
+            self.parent[x], x = root, self.parent[x]
+        return root
+
+    def union(self, a: str, b: str) -> None:
+        ra, rb = self.find(a), self.find(b)
+        if ra != rb:
+            self.parent[rb] = ra
+
+
+def assign_groups(
+    df: pd.DataFrame, k: int = 5, link_threshold: float = 0.5
+) -> tuple[pd.Series, dict]:
+    """Group id per protein.
+
+    Annotated proteins: connected components over ``fam:*`` and ``pfam:*``
+    tokens — a protein carrying family F and domains P1, P2 unions all three,
+    so any shared domain (directly or via a family bridge) merges groups.
+    Unannotated proteins: joined to the most k-mer-similar annotated protein's
+    group when Jaccard ≥ ``link_threshold``, else clustered among themselves.
+    """
+    uf = _UnionFind()
+    tokens_per_row: list[list[str]] = []
+    for row in df.itertuples():
+        tokens = []
+        if isinstance(row.family, str):
+            tokens.append(f"fam:{row.family}")
+        pfams = row.pfam_all if isinstance(row.pfam_all, list | np.ndarray) else []
+        tokens.extend(f"pfam:{p}" for p in pfams)
+        tokens_per_row.append(tokens)
+        for token in tokens[1:]:
+            uf.union(tokens[0], token)
+
     groups = pd.Series(index=df.index, dtype="object")
+    annotated_rows = []
+    for idx, tokens in zip(df.index, tokens_per_row, strict=True):
+        if tokens:
+            groups[idx] = uf.find(tokens[0])
+            annotated_rows.append(idx)
 
-    has_family = df["family"].notna()
-    groups[has_family] = "fam:" + df.loc[has_family, "family"]
+    rest = [idx for idx, tokens in zip(df.index, tokens_per_row, strict=True) if not tokens]
+    n_linked = 0
+    if rest:
+        annotated_sets = [
+            (idx, _kmer_set(df.at[idx, "sequence"], k)) for idx in annotated_rows
+        ]
+        orphan_sets: list[tuple[int, set[str]]] = []
+        for idx in rest:
+            kmers = _kmer_set(df.at[idx, "sequence"], k)
+            best_idx, best_sim = None, 0.0
+            for a_idx, a_set in annotated_sets:
+                sim = _jaccard(kmers, a_set)
+                if sim > best_sim:
+                    best_idx, best_sim = a_idx, sim
+            if best_idx is not None and best_sim >= link_threshold:
+                groups[idx] = groups[best_idx]
+                n_linked += 1
+            else:
+                # Greedy single-linkage among the remaining orphans.
+                placed = False
+                for o_idx, o_set in orphan_sets:
+                    if _jaccard(kmers, o_set) >= link_threshold:
+                        groups[idx] = groups[o_idx]
+                        placed = True
+                        break
+                if not placed:
+                    groups[idx] = f"kmer:{idx}"
+                orphan_sets.append((idx, kmers))
 
-    has_pfam = ~has_family & df["pfam_primary"].notna()
-    groups[has_pfam] = "pfam:" + df.loc[has_pfam, "pfam_primary"]
-
-    rest = df.index[~has_family & ~has_pfam]
-    if len(rest) > 0:
-        labels = _jaccard_clusters(df.loc[rest, "sequence"].tolist())
-        groups[rest] = [f"kmer:{label}" for label in labels]
-
+    sizes = groups.value_counts()
     stats = {
-        "by_family": int(has_family.sum()),
-        "by_pfam": int(has_pfam.sum()),
-        "by_kmer_cluster": int(len(rest)),
+        "annotated": int(len(annotated_rows)),
+        "unannotated_linked_to_annotated": n_linked,
+        "unannotated_own_cluster": int(len(rest) - n_linked),
         "n_groups": int(groups.nunique()),
+        "largest_group": int(sizes.iloc[0]) if len(sizes) else 0,
+        "largest_group_fraction": float(sizes.iloc[0] / len(df)) if len(df) else 0.0,
     }
     return groups, stats
 
