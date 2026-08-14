@@ -22,6 +22,7 @@ import type {
   ProteinSummary,
   RegionSearchPayload,
   SearchHit,
+  TrajectoryPayload,
 } from "./types";
 
 const API = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? null;
@@ -271,5 +272,19 @@ export async function regionSearch(
   return request<RegionSearchPayload>("/region-search", {
     method: "POST",
     body: JSON.stringify({ accession, start, end, k }),
+  });
+}
+
+export async function trajectoryOf(
+  target: { accession?: string; sequence?: string },
+  mutations: string[],
+  pooling: Pooling = "mean",
+): Promise<TrajectoryPayload> {
+  if (!isLive) {
+    throw new ApiError(501, "Trajectories need the live API (ESM inference).");
+  }
+  return request<TrajectoryPayload>("/trajectory", {
+    method: "POST",
+    body: JSON.stringify({ ...target, mutations, pooling }),
   });
 }

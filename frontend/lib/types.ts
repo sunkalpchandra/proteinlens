@@ -166,3 +166,22 @@ export interface ExtendedBenchmarkRow {
   nmi: number;
   [metric: string]: string | number;
 }
+
+export interface TrajectoryStep {
+  step: number;
+  mutation: string;
+  cumulative: string[];
+  step_displacement: number;
+  displacement_from_wt: number;
+  cosine_to_wt: number;
+}
+
+export interface TrajectoryPayload {
+  pooling: Pooling;
+  n_steps: number;
+  steps: TrajectoryStep[];
+  path_length: number;
+  net_displacement: number;
+  directness: number;
+  note: string;
+}
