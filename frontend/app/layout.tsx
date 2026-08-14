@@ -4,9 +4,20 @@ import "./globals.css";
 import { NavLinks } from "@/components/nav-links";
 
 export const metadata: Metadata = {
-  title: "ProteinLens",
+  title: {
+    default: "ProteinLens",
+    template: "%s · ProteinLens",
+  },
   description:
     "Explore how a frozen ESM-2 protein language model organizes sequence space: embeddings, retrieval, mutation perturbation analysis, and representation benchmarks.",
+  metadataBase: new URL("https://sunkalpchandra.github.io/proteinlens/"),
+  openGraph: {
+    title: "ProteinLens",
+    description:
+      "Interactive exploration of protein language-model representations: a 12k-protein embedding map, semantic retrieval, mutation landscapes, and rigorous benchmarks.",
+    type: "website",
+    siteName: "ProteinLens",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
