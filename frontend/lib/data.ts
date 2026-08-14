@@ -24,6 +24,11 @@ import type {
 
 const API = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? null;
 
+// Static assets live under the base path when deployed to a subpath host
+// (GitHub Pages project sites). next/link handles this automatically; raw
+// fetch() calls must prefix it themselves.
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 export const isLive = API !== null;
 
 export class ApiError extends Error {
@@ -54,7 +59,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 async function demoFile<T>(name: string): Promise<T> {
-  const res = await fetch(`/demo/${name}`);
+  const res = await fetch(`${BASE_PATH}/demo/${name}`);
   if (!res.ok) throw new ApiError(res.status, `Demo asset missing: ${name}`);
   return res.json() as Promise<T>;
 }

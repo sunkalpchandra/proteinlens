@@ -33,6 +33,9 @@ PCA(50) → UMAP(2) → interactive representation map (Next.js)
 
 ## Demo
 
+**Live demo: [sunkalpchandra.github.io/proteinlens](https://sunkalpchandra.github.io/proteinlens/)**
+(static export on GitHub Pages, auto-deployed from `main`).
+
 - **Frontend**: Next.js app with a canvas-rendered embedding map (12k points, 60 fps zoom/pan),
   protein profiles, semantic search, and a mutation simulator.
 - **Static demo mode**: the deployed site runs entirely from a precomputed 1,200-protein bundle —
