@@ -33,6 +33,23 @@ index:
 benchmarks:
 	$(PYTHON) scripts/run_benchmarks.py
 
+domains:
+	$(PYTHON) scripts/download_domains.py
+
+subset:
+	$(PYTHON) scripts/make_eval_subset.py
+
+extended: subset
+	$(PYTHON) scripts/embed_subset.py --model facebook/esm2_t6_8M_UR50D
+	$(PYTHON) scripts/embed_subset.py --model facebook/esm2_t30_150M_UR50D
+	$(PYTHON) scripts/train_attention_pooler.py --objective supcon
+	$(PYTHON) scripts/embed_subset_attention.py --pooler data/embeddings/attention_pooler_supcon.pt --name attention_supcon
+	$(PYTHON) scripts/embed_subset_prost.py
+	$(PYTHON) scripts/run_extended_benchmarks.py
+
+ann-benchmark:
+	$(PYTHON) scripts/benchmark_ann.py
+
 figures:
 	$(PYTHON) scripts/generate_figures.py
 
