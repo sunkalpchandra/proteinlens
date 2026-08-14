@@ -44,6 +44,7 @@ class AppState:
         self._pipeline: EmbeddingPipeline | None = None
         self._analyzer: MutationAnalyzer | None = None
         self.encoder_lock = threading.Lock()
+        self._init_lock = threading.Lock()
 
     # -- lazy resources ----------------------------------------------------
     def index(self, pooling: str) -> ProteinIndex:
@@ -67,12 +68,16 @@ class AppState:
 
     @property
     def pipeline(self) -> EmbeddingPipeline:
+        # Double-checked locking: two concurrent cold requests must not both
+        # load the ESM-2 checkpoint.
         if self._pipeline is None:
-            self._pipeline = EmbeddingPipeline(
-                model_name=self.model_name,
-                cache_path=self.embeddings_dir / "adhoc_cache.sqlite",
-                attention_pooler_path=self.embeddings_dir / "attention_pooler.pt",
-            )
+            with self._init_lock:
+                if self._pipeline is None:
+                    self._pipeline = EmbeddingPipeline(
+                        model_name=self.model_name,
+                        cache_path=self.embeddings_dir / "adhoc_cache.sqlite",
+                        attention_pooler_path=self.embeddings_dir / "attention_pooler.pt",
+                    )
         return self._pipeline
 
     @property

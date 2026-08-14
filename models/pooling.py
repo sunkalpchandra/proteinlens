@@ -24,6 +24,10 @@ from torch import nn
 POOLING_STRATEGIES = ("mean", "max", "bos", "attention")
 
 
+class PoolingUnavailableError(ValueError):
+    """A pooling strategy was requested whose parameters are not loaded."""
+
+
 def mean_pool(residues: torch.Tensor) -> torch.Tensor:
     return residues.mean(dim=0)
 
@@ -114,7 +118,7 @@ class Pooler:
             return bos, None
         if strategy == "attention":
             if self.attention_pooler is None:
-                raise ValueError(
+                raise PoolingUnavailableError(
                     "Attention pooling requested but no trained pooler is loaded. "
                     "Run scripts/train_attention_pooler.py first."
                 )

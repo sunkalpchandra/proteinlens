@@ -20,6 +20,7 @@ from fastapi.responses import JSONResponse
 from api.routes import corpus, mutation, proteins, search
 from api.state import get_state
 from ml.sequence import SequenceValidationError
+from models.pooling import PoolingUnavailableError
 
 
 @asynccontextmanager
@@ -59,6 +60,11 @@ app.add_middleware(
 
 @app.exception_handler(SequenceValidationError)
 async def sequence_error_handler(_: Request, exc: SequenceValidationError) -> JSONResponse:
+    return JSONResponse(status_code=422, content={"detail": str(exc)})
+
+
+@app.exception_handler(PoolingUnavailableError)
+async def pooling_error_handler(_: Request, exc: PoolingUnavailableError) -> JSONResponse:
     return JSONResponse(status_code=422, content={"detail": str(exc)})
 
 
