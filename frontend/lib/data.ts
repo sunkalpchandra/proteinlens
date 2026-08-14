@@ -60,7 +60,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 async function demoFile<T>(name: string): Promise<T> {
   const res = await fetch(`${BASE_PATH}/demo/${name}`);
-  if (!res.ok) throw new ApiError(res.status, `Demo asset missing: ${name}`);
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      res.status === 404
+        ? "Demo dataset not published yet for this deployment — the corpus pipeline publishes it automatically; check back shortly. (Running locally? Point NEXT_PUBLIC_API_URL at the backend or run scripts/build_demo_bundle.py.)"
+        : `Demo asset failed to load: ${name} (HTTP ${res.status})`,
+    );
+  }
   return res.json() as Promise<T>;
 }
 
