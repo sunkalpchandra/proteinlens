@@ -96,22 +96,22 @@ class TestModelEndpoints:
 
     def test_mutation_analysis(self, client):
         body = client.post(
-            "/mutation", json={"sequence": self.SEQ, "mutation": "H63Y"}
+            "/mutation", json={"sequence": self.SEQ, "mutation": "H59Y"}
         ).json()
-        assert body["mutation"] == "H63Y"
+        assert body["mutation"] == "H59Y"
         assert body["displacement"] > 0
         assert 0.9 < body["cosine_similarity"] <= 1.0
         assert len(body["per_residue_delta"]) == len(self.SEQ)
 
     def test_mutation_wildtype_mismatch_422(self, client):
         response = client.post(
-            "/mutation", json={"sequence": self.SEQ, "mutation": "W63Y"}
+            "/mutation", json={"sequence": self.SEQ, "mutation": "W59Y"}
         )
         assert response.status_code == 422
 
     def test_landscape_has_19_effects(self, client):
         body = client.post(
-            "/mutation-landscape", json={"sequence": self.SEQ, "position": 63}
+            "/mutation-landscape", json={"sequence": self.SEQ, "position": 59}
         ).json()
         assert body["wildtype"] == "H"
         assert len(body["effects"]) == 19

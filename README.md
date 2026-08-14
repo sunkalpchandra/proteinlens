@@ -53,7 +53,7 @@ landscape → inspect which substitutions perturb the representation most.
 flowchart LR
     subgraph data [Data pipeline]
         A[UniProt REST\nSwiss-Prot TSV] --> B[preprocess.py\nvalidate · dedup · cap]
-        B --> C[proteins.parquet\n11,999 proteins]
+        B --> C[proteins.parquet\n12,005 proteins]
         C --> D[make_splits.py\nfamily-grouped 70/15/15]
     end
     subgraph ml [Representation engine]
@@ -126,7 +126,7 @@ statement, not a biological anomaly claim.
 | License | [CC BY 4.0](https://www.uniprot.org/help/license) |
 | Organisms | human, mouse, zebrafish, fly, worm, arabidopsis, yeast, *E. coli* K-12, *B. subtilis* |
 | Filters | length 50–512, canonical alphabet only, exact-duplicate removal, uncharacterized entries dropped |
-| Corpus | 11,999 proteins, 94.5% with Pfam domains, ~3.2k family labels |
+| Corpus | 12,005 proteins, 94.5% with Pfam domains, ~3.2k family labels |
 | Sampling | ≤80 proteins per family (anti-dominance), then organism-proportional to 12k, seed 42 |
 
 Raw downloads land in `data/raw/` with a manifest (queries, UniProt release, SHA-256 per file).
