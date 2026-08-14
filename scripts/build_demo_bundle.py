@@ -128,6 +128,11 @@ def main() -> int:
         "points": [point_of[acc] for acc in subset if acc in point_of],
     }
     (out / "map_mean.json").write_text(json.dumps(demo_map))
+    # Cluster summaries travel as-is: they describe full-corpus clusters, and
+    # the map subset carries the same cluster ids.
+    clusters_src = Path("data/index/clusters_mean.json")
+    if clusters_src.exists():
+        (out / "clusters_mean.json").write_text(clusters_src.read_text())
     (out / "proteins.json").write_text(
         json.dumps([summary_of(by_acc.loc[acc]) for acc in subset])
     )
