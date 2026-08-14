@@ -40,6 +40,17 @@ MAP_COLUMNS = [
 ]
 
 
+# UMAP neighborhood presets. "default" balances both scales; "local" (small
+# neighborhood) sharpens fine family structure; "global" (large neighborhood)
+# preserves broad layout. Each preset is a separate cached projection; cluster
+# labels, kNN stats, and outliers are projection-independent and shared.
+MAP_PRESETS: dict[str, dict] = {
+    "default": {"n_neighbors": 15, "min_dist": 0.1},
+    "local": {"n_neighbors": 5, "min_dist": 0.05},
+    "global": {"n_neighbors": 50, "min_dist": 0.3},
+}
+
+
 def build_map_payload(
     df: pd.DataFrame,
     store: EmbeddingStore,
@@ -47,6 +58,7 @@ def build_map_payload(
     out_dir: Path,
     n_clusters: int,
     seed: int,
+    presets: list[str] | None = None,
 ) -> dict:
     embeddings = np.asarray(store.matrix(pooling))
     # Fingerprint the actual matrix bytes: re-embedding the same corpus with a
@@ -57,12 +69,16 @@ def build_map_payload(
         np.ascontiguousarray(embeddings, dtype=np.float32).tobytes()
     ).hexdigest()[:16]
 
-    params = ProjectionParams(pooling=pooling, seed=seed)
     cache = ProjectionCache(out_dir / "projections")
-    t0 = time.time()
-    coords, info, cached = cache.load_or_compute(embeddings, params, fingerprint)
-    print(f"  projection ({pooling}): {'cache' if cached else f'{time.time()-t0:.0f}s'}"
-          f" | PCA var {info.get('pca_explained_variance', 0):.2f}")
+    coords_by_preset: dict[str, tuple[np.ndarray, dict]] = {}
+    for preset in presets or ["default"]:
+        params = ProjectionParams(pooling=pooling, seed=seed, **MAP_PRESETS[preset])
+        t0 = time.time()
+        coords, info, cached = cache.load_or_compute(embeddings, params, fingerprint)
+        coords_by_preset[preset] = (coords, info)
+        print(f"  projection ({pooling}/{preset}): "
+              f"{'cache' if cached else f'{time.time()-t0:.0f}s'}"
+              f" | PCA var {info.get('pca_explained_variance', 0):.2f}")
 
     labels, cluster_info = kmeans_clusters(embeddings, n_clusters=n_clusters, seed=seed)
     print(f"  kmeans ({pooling}): {n_clusters} clusters, silhouette {cluster_info['silhouette_cosine']:.3f}")
@@ -72,40 +88,42 @@ def build_map_payload(
     outliers = outlier_scores(knn_dist)
 
     meta = df.set_index("accession").loc[store.accessions].reset_index()
-    points = []
-    for i, row in enumerate(meta.itertuples()):
-        points.append({
-            "id": row.accession,
-            "name": row.protein_name,
-            "gene": row.gene if isinstance(row.gene, str) else None,
-            "org": row.organism_short,
-            "len": int(row.length),
-            "family": row.family if isinstance(row.family, str) else None,
-            "pfam": row.pfam_primary if isinstance(row.pfam_primary, str) else None,
-            "ec": row.ec_class if isinstance(row.ec_class, str) else None,
-            "enzyme": bool(row.is_enzyme),
-            "loc": row.localization if isinstance(row.localization, str) else None,
-            "x": round(float(coords[i, 0]), 4),
-            "y": round(float(coords[i, 1]), 4),
-            "cluster": int(labels[i]),
-            "knn_dist": round(float(knn_dist[i]), 5),
-            "outlier": round(float(outliers[i]), 4),
-        })
-
-    payload = {
-        "pooling": pooling,
-        "model": store.meta["model"],
-        "projection": info,
-        "clustering": cluster_info,
-        "points": points,
-    }
-    (out_dir / f"map_{pooling}.json").write_text(json.dumps(payload))
+    for preset, (coords, info) in coords_by_preset.items():
+        points = []
+        for i, row in enumerate(meta.itertuples()):
+            points.append({
+                "id": row.accession,
+                "name": row.protein_name,
+                "gene": row.gene if isinstance(row.gene, str) else None,
+                "org": row.organism_short,
+                "len": int(row.length),
+                "family": row.family if isinstance(row.family, str) else None,
+                "pfam": row.pfam_primary if isinstance(row.pfam_primary, str) else None,
+                "ec": row.ec_class if isinstance(row.ec_class, str) else None,
+                "enzyme": bool(row.is_enzyme),
+                "loc": row.localization if isinstance(row.localization, str) else None,
+                "x": round(float(coords[i, 0]), 4),
+                "y": round(float(coords[i, 1]), 4),
+                "cluster": int(labels[i]),
+                "knn_dist": round(float(knn_dist[i]), 5),
+                "outlier": round(float(outliers[i]), 4),
+            })
+        payload = {
+            "pooling": pooling,
+            "preset": preset,
+            "model": store.meta["model"],
+            "projection": info,
+            "clustering": cluster_info,
+            "points": points,
+        }
+        suffix = "" if preset == "default" else f"_{preset}"
+        (out_dir / f"map_{pooling}{suffix}.json").write_text(json.dumps(payload))
 
     summaries = cluster_summaries(meta, labels)
     (out_dir / f"clusters_{pooling}.json").write_text(
         json.dumps({"pooling": pooling, "clustering": cluster_info, "clusters": summaries})
     )
-    return {"projection_cached": cached, **cluster_info}
+    return {"presets": list(coords_by_preset), **cluster_info}
 
 
 def main() -> int:
@@ -114,6 +132,8 @@ def main() -> int:
     parser.add_argument("--embeddings", type=Path, default=Path("data/embeddings"))
     parser.add_argument("--out", type=Path, default=Path("data/index"))
     parser.add_argument("--map-poolings", nargs="+", default=["mean", "attention"])
+    parser.add_argument("--presets", nargs="+", default=["default", "local", "global"],
+                        choices=list(MAP_PRESETS))
     parser.add_argument("--n-clusters", type=int, default=25)
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
@@ -133,7 +153,11 @@ def main() -> int:
             print(f"  skipping map for '{pooling}' (no embeddings)")
             continue
         print(f"Map payload: {pooling}")
-        metrics[pooling] = build_map_payload(df, store, pooling, args.out, args.n_clusters, args.seed)
+        # Alternative presets only for the primary (mean) map to bound build time.
+        presets = args.presets if pooling == "mean" else ["default"]
+        metrics[pooling] = build_map_payload(
+            df, store, pooling, args.out, args.n_clusters, args.seed, presets
+        )
 
     log_experiment(
         "build_index",
