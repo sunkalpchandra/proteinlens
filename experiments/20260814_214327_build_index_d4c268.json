@@ -1,0 +1,43 @@
+{
+  "experiment_id": "20260814_214327_build_index_d4c268",
+  "kind": "build_index",
+  "created_at": "2026-08-14T21:43:27.302761+00:00",
+  "git_commit": "46810f0d4b4891bc3a5b9a3fc8eb0297d6f71648",
+  "config": {
+    "poolings": [
+      "mean",
+      "max",
+      "bos",
+      "attention"
+    ],
+    "map_poolings": [
+      "mean",
+      "attention"
+    ],
+    "n_clusters": 25,
+    "seed": 42,
+    "corpus_sha256_16": "fcc669c7dab05daf"
+  },
+  "metrics": {
+    "mean": {
+      "presets": [
+        "default",
+        "local",
+        "global"
+      ],
+      "algorithm": "kmeans",
+      "n_clusters": 25,
+      "inertia": 1095.076416015625,
+      "silhouette_cosine": 0.060952190309762955
+    },
+    "attention": {
+      "presets": [
+        "default"
+      ],
+      "algorithm": "kmeans",
+      "n_clusters": 25,
+      "inertia": 5184.4404296875,
+      "silhouette_cosine": 0.11256696283817291
+    }
+  }
+}
