@@ -171,3 +171,39 @@ class HealthResponse(BaseModel):
     poolings: list[str]
     device: str
     encoder_loaded: bool
+
+
+class DomainOut(BaseModel):
+    name: str
+    start: int  # 1-based, inclusive
+    end: int
+
+
+class DomainsResponse(BaseModel):
+    accession: str
+    length: int
+    domains: list[DomainOut]
+    note: str = (
+        "UniProt-curated DOMAIN features; coverage is partial (~30% of the "
+        "corpus carries curated domain coordinates)."
+    )
+
+
+class RegionSearchRequest(BaseModel):
+    accession: str
+    start: int = Field(..., ge=1)
+    end: int = Field(..., ge=1)
+    k: int = Field(10, ge=1, le=100)
+
+
+class RegionSearchResponse(BaseModel):
+    accession: str
+    start: int
+    end: int
+    span_length: int
+    hits: list[SearchHitOut]
+    note: str = (
+        "A mean-pooled residue-span embedding queried against protein-level "
+        "mean embeddings — a cross-granularity cosine comparison, not a "
+        "domain-database search."
+    )
