@@ -166,3 +166,20 @@ class TestTrajectoryValidation:
             "/trajectory", json={"sequence": self.SEQ, "mutations": muts}
         )
         assert response.status_code == 422
+
+
+class TestCompare:
+    def test_compare_returns_cosines_and_identity(self, client):
+        body = client.post("/compare", json={"a": "T0000", "b": "T0001"}).json()
+        assert body["a"]["accession"] == "T0000"
+        assert "mean" in body["cosine_by_pooling"]
+        assert -1.0 <= body["cosine_by_pooling"]["mean"] <= 1.0
+        assert 0.0 <= body["sequence_identity"] <= 1.0
+        assert body["same_family"] is True  # both are Globin family in the fixture
+        assert body["shared_pfam"] == ["PF00042"]
+
+    def test_compare_rejects_same_protein(self, client):
+        assert client.post("/compare", json={"a": "T0000", "b": "T0000"}).status_code == 422
+
+    def test_compare_unknown_accession_404(self, client):
+        assert client.post("/compare", json={"a": "T0000", "b": "NOPE"}).status_code == 404
