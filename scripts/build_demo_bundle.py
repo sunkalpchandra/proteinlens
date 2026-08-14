@@ -36,18 +36,21 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from ml.embeddings import EmbeddingStore  # noqa: E402
 from ml.retrieval import ProteinIndex  # noqa: E402
 
-# Well-known proteins that make the demo immediately legible. Positions are
-# 1-based sequence positions (including the initiator Met where present) and
-# are chosen for recognizability (e.g. HBB position 7 = sickle-cell site β6).
+# Well-known proteins that make the demo immediately legible (kept in the
+# corpus by preprocessing — see ml.corpus.SHOWCASE_ACCESSIONS). Positions are
+# 1-based sequence positions (initiator Met included) chosen for
+# recognizability; e.g. HBB position 7 = sickle-cell site β6.
 SHOWCASE: dict[str, list[int]] = {
-    "P69905": [59, 63, 88],   # Hemoglobin subunit alpha (human): distal/proximal His region
-    "P68871": [7, 64, 93],    # Hemoglobin subunit beta (human): E7V sickle site
-    "P02144": [65, 94],       # Myoglobin (human)
-    "P61626": [53, 63],       # Lysozyme C (human)
-    "P01308": [48, 90],       # Insulin (human)
-    "P0DP23": [21, 77],       # Calmodulin-1 (human)
-    "P00698": [53, 63],       # Lysozyme C (chicken) — may be absent from corpus
-    "P62988": [48, 63],       # Ubiquitin — may be absent
+    "P69905": [59, 63, 88],     # Hemoglobin α: distal His region / proximal His
+    "P68871": [7, 64, 93],      # Hemoglobin β: sickle site, distal/proximal His
+    "P02144": [65, 94],         # Myoglobin: distal/proximal His
+    "P01308": [48, 90],         # Insulin
+    "P61626": [53, 63],         # Lysozyme C: catalytic-region residues
+    "P0DP23": [21, 77],         # Calmodulin-1: EF-hand region
+    "P04637": [175, 248, 273],  # p53: hotspot codons R175/R248/R273
+    "P01112": [12, 13, 61],     # HRAS: G12/G13/Q61
+    "P00441": [5, 94],          # SOD1: A4V site (pos 5 with Met)
+    "P68431": [5, 10, 28],      # Histone H3.1: K4/K9/K27 sites (+1 for Met)
 }
 
 
