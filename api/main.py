@@ -47,6 +47,22 @@ app = FastAPI(
 
 app.add_middleware(GZipMiddleware, minimum_size=1024)
 
+
+@app.middleware("http")
+async def request_timing(request: Request, call_next):
+    """One quiet log line per request: method, path, status, wall time.
+
+    Inference endpoints legitimately take seconds (ESM forward passes); the
+    timing makes slow-but-expected vs slow-and-broken distinguishable in logs.
+    """
+    import time
+
+    started = time.perf_counter()
+    response = await call_next(request)
+    elapsed_ms = (time.perf_counter() - started) * 1000
+    print(f"{request.method} {request.url.path} {response.status_code} {elapsed_ms:.0f}ms")
+    return response
+
 cors_origins = os.environ.get(
     "PROTEINLENS_CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000"
 ).split(",")
