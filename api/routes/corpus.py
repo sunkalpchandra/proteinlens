@@ -67,4 +67,10 @@ def benchmark(state: AppState = Depends(get_state)) -> JSONResponse:
     md_path = state.reports_dir / "benchmark.md"
     if md_path.exists():
         payload["markdown"] = md_path.read_text()
+
+    extended_path = state.reports_dir / "extended_benchmark.csv"
+    if extended_path.exists():
+        payload["extended"] = json.loads(
+            pd.read_csv(extended_path).to_json(orient="records")
+        )
     return JSONResponse(payload)
