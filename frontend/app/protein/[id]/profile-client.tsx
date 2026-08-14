@@ -10,6 +10,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { DomainTrack } from "@/components/domain-track";
 import { ResidueTrack } from "@/components/residue-track";
+import { SequenceActions } from "@/components/sequence-actions";
 import { SequenceViewer } from "@/components/sequence-viewer";
 import { StatGrid, type StatItem } from "@/components/stat-grid";
 import { ApiError, getAttention, getDomains, getProfile, isLive, regionSearch } from "@/lib/data";
@@ -587,7 +588,18 @@ export function ProteinPageClient() {
       </Section>
 
       {/* Sequence --------------------------------------------------------------- */}
-      <Section title="sequence">
+      <Section
+        title="sequence"
+        action={
+          profile ? (
+            <SequenceActions
+              accession={profile.protein.accession}
+              name={profile.protein.name}
+              sequence={sequence}
+            />
+          ) : undefined
+        }
+      >
         <SequenceViewer
           sequence={sequence}
           selected={selected}
