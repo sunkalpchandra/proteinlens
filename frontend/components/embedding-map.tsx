@@ -245,11 +245,30 @@ export function EmbeddingMap({
     const i = indexOfId.get(focusId);
     if (i === undefined) return;
     const k = Math.max(transformRef.current.k, 4);
-    const t = zoomIdentity
+    const target = zoomIdentity
       .translate(size.w / 2, size.h / 2)
       .scale(k)
       .translate(-layout.px[i], -layout.py[i]);
-    select(canvas).transition().duration(650).call(zoomBehavior.transform, t);
+    // Tween via rAF: d3-transition is not a dependency, so animate the zoom
+    // transform manually and feed each frame through zoomBehavior.transform.
+    const from = transformRef.current;
+    const duration = 650;
+    const t0 = performance.now();
+    const easeCubicInOut = (u: number) =>
+      u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
+    let raf = requestAnimationFrame(function step(now: number) {
+      const u = Math.min(1, (now - t0) / duration);
+      const e = easeCubicInOut(u);
+      const frame = zoomIdentity
+        .translate(
+          from.x + (target.x - from.x) * e,
+          from.y + (target.y - from.y) * e,
+        )
+        .scale(from.k + (target.k - from.k) * e);
+      zoomBehavior.transform(select(canvas), frame);
+      if (u < 1) raf = requestAnimationFrame(step);
+    });
+    return () => cancelAnimationFrame(raf);
   }, [focusId, layout, indexOfId, size, zoomBehavior]);
 
   // --- picking ---------------------------------------------------------------

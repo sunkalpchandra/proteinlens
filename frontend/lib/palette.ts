@@ -47,7 +47,11 @@ export function categoricalScale(
   const slot = new Map(top.map(([label], i) => [label, SERIES[i]]));
   const otherCount = values.filter((v) => v !== null && !slot.has(v)).length;
 
-  const legend = top.map(([label, count], i) => ({ label, color: SERIES[i], count }));
+  const legend: CategoricalScale["legend"] = top.map(([label, count], i) => ({
+    label,
+    color: SERIES[i],
+    count,
+  }));
   if (otherCount > 0) legend.push({ label: "Other", color: OTHER_COLOR, count: otherCount });
 
   return {
