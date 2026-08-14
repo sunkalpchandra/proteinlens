@@ -72,8 +72,11 @@ def sequence_vs_embedding(
 ) -> dict:
     """Sample protein pairs, compute alignment identity vs embedding cosine.
 
-    Random pairs alone are nearly all <15% identity, so half the sample comes
-    from embedding nearest neighbors to populate the interesting region.
+    Two explicit strata, tagged in the CSV: ``random`` (uniform pairs — nearly
+    all <15% identity) and ``nn`` (embedding nearest-neighbor pairs, added so
+    the high-similarity region is populated at all). Correlation statistics
+    use ONLY the random stratum; the nn stratum is enriched for high cosine
+    *by construction* and is reported separately, never pooled.
     """
     import faiss
 
@@ -81,45 +84,62 @@ def sequence_vs_embedding(
     emb = l2_normalize(np.asarray(store.matrix("mean")))
     n = len(df)
 
-    pairs: set[tuple[int, int]] = set()
-    while len(pairs) < n_pairs // 2:
+    random_pairs: set[tuple[int, int]] = set()
+    while len(random_pairs) < n_pairs // 2:
         i, j = rng.integers(n), rng.integers(n)
         if i != j:
-            pairs.add((min(i, j), max(i, j)))
+            random_pairs.add((min(i, j), max(i, j)))
 
     index = faiss.IndexFlatIP(emb.shape[1])
     index.add(emb)
     seeds = rng.choice(n, size=n_pairs // 8, replace=False)
     _, rows = index.search(emb[seeds], 5)
+    nn_pairs: set[tuple[int, int]] = set()
     for s, row in zip(seeds, rows, strict=True):
         for r in row[1:]:
-            pairs.add((min(int(s), int(r)), max(int(s), int(r))))
+            pair = (min(int(s), int(r)), max(int(s), int(r)))
+            if pair not in random_pairs:
+                nn_pairs.add(pair)
 
     records = []
     sequences = df["sequence"].tolist()
     t0 = time.time()
-    for i, j in pairs:
-        identity = sequence_identity(sequences[i], sequences[j])
-        records.append({
-            "a": df["accession"].iat[i], "b": df["accession"].iat[j],
-            "identity": round(identity, 4),
-            "cosine": round(float(np.dot(emb[i], emb[j])), 4),
-            "same_family": bool(
-                isinstance(df["family"].iat[i], str)
-                and df["family"].iat[i] == df["family"].iat[j]
-            ),
-        })
+    for stratum, pairs in (("random", random_pairs), ("nn", nn_pairs)):
+        for i, j in pairs:
+            identity = sequence_identity(sequences[i], sequences[j])
+            records.append({
+                "a": df["accession"].iat[i], "b": df["accession"].iat[j],
+                "stratum": stratum,
+                "identity": round(identity, 4),
+                "cosine": round(float(np.dot(emb[i], emb[j])), 4),
+                "same_family": bool(
+                    isinstance(df["family"].iat[i], str)
+                    and df["family"].iat[i] == df["family"].iat[j]
+                ),
+            })
     frame = pd.DataFrame(records)
     frame.to_csv(out_path, index=False)
     print(f"  {len(frame)} pairs aligned in {time.time()-t0:.0f}s → {out_path}")
 
-    discordant_high = frame[(frame.identity < 0.20) & (frame.cosine > 0.90)]
-    discordant_low = frame[(frame.identity > 0.50) & (frame.cosine < 0.70)]
+    random_frame = frame[frame.stratum == "random"]
+    nn_frame = frame[frame.stratum == "nn"]
+
+    def discordant(sub: pd.DataFrame) -> tuple[int, int]:
+        high = len(sub[(sub.identity < 0.20) & (sub.cosine > 0.90)])
+        low = len(sub[(sub.identity > 0.50) & (sub.cosine < 0.70)])
+        return high, low
+
+    rand_high, rand_low = discordant(random_frame)
+    nn_high, nn_low = discordant(nn_frame)
     return {
         "n_pairs": len(frame),
-        "pearson_r": float(frame["identity"].corr(frame["cosine"])),
-        "low_identity_high_cosine": int(len(discordant_high)),
-        "high_identity_low_cosine": int(len(discordant_low)),
+        "n_random": len(random_frame),
+        "n_nn": len(nn_frame),
+        "pearson_r_random": float(random_frame["identity"].corr(random_frame["cosine"])),
+        "low_identity_high_cosine_random": rand_high,
+        "low_identity_high_cosine_nn": nn_high,
+        "high_identity_low_cosine_random": rand_low,
+        "high_identity_low_cosine_nn": nn_low,
     }
 
 
@@ -198,7 +218,7 @@ def main() -> int:
     # --- Sequence vs embedding similarity ------------------------------------
     sve = sequence_vs_embedding(df, store, args.pairs, args.seed,
                                 args.reports / "seq_vs_emb.csv")
-    print(f"seq-vs-emb: r = {sve['pearson_r']:.3f}")
+    print(f"seq-vs-emb: r = {sve['pearson_r_random']:.3f} (random stratum)")
 
     # --- Write ------------------------------------------------------------------
     table = pd.DataFrame(rows)
@@ -263,9 +283,17 @@ def write_markdown(table: pd.DataFrame, sve: dict, split_summary: dict,
                          f"| {r.cosine_std:.4f} | {r.cosine_p05:.4f} |")
 
     lines += ["", "## Sequence identity vs embedding cosine", "",
-              f"- pairs: {sve['n_pairs']}, Pearson r = {sve['pearson_r']:.3f}",
-              f"- low-identity (<20%) / high-cosine (>0.9) pairs: {sve['low_identity_high_cosine']}",
-              f"- high-identity (>50%) / low-cosine (<0.7) pairs: {sve['high_identity_low_cosine']}",
+              "Sampling uses two strata: uniform random pairs, plus embedding "
+              "nearest-neighbor pairs added purely to populate the high-similarity "
+              "region (they are enriched for high cosine **by construction** and are "
+              "never pooled into correlation statistics).",
+              "",
+              f"- random stratum: {sve['n_random']} pairs, Pearson r = {sve['pearson_r_random']:.3f}",
+              f"- low-identity (<20%) / high-cosine (>0.9): {sve['low_identity_high_cosine_random']} random, "
+              f"{sve['low_identity_high_cosine_nn']} in the NN-enriched stratum "
+              f"(of {sve['n_nn']} NN pairs)",
+              f"- high-identity (>50%) / low-cosine (<0.7): {sve['high_identity_low_cosine_random']} random, "
+              f"{sve['high_identity_low_cosine_nn']} NN",
               "",
               "High-cosine low-identity pairs are *representation-space neighbors*; "
               "no claim of biological convergence is made without evidence.", ""]

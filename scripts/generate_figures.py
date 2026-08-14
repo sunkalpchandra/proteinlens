@@ -108,15 +108,20 @@ def fig_seq_vs_emb() -> None:
     ax.scatter(same.identity, same.cosine, s=6, c=SERIES[1], alpha=0.6,
                linewidths=0, label=f"same family (n={len(same)})", rasterized=True)
     ax.axvspan(0, 0.20, ymin=0.9, alpha=0.06, color=SERIES[2])
-    r = frame["identity"].corr(frame["cosine"])
+    # Correlation only over the uniform random stratum — the NN stratum is
+    # enriched for high cosine by construction and must not enter statistics.
+    random_frame = frame[frame.stratum == "random"] if "stratum" in frame else frame
+    r = random_frame["identity"].corr(random_frame["cosine"])
     n_conv = len(frame[(frame.identity < 0.2) & (frame.cosine > 0.9)])
     ax.set_xlabel("pairwise sequence identity (global alignment)")
     ax.set_ylabel("embedding cosine similarity (mean pooling)")
-    ax.set_title(f"Sequence identity vs representation similarity (r = {r:.2f})")
+    ax.set_title(f"Sequence identity vs representation similarity (r = {r:.2f}, random pairs)")
     ax.grid(True, alpha=0.6)
     ax.legend(loc="lower right")
     ax.annotate(
-        f"{n_conv} representation-space neighbor pairs\n(<20% identity, cos > 0.9)",
+        f"{n_conv} representation-space neighbor pairs\n"
+        "(<20% identity, cos > 0.9; sample includes an\n"
+        "NN-enriched stratum — counts are not corpus rates)",
         xy=(0.02, 0.965), xycoords="axes fraction", fontsize=8, color=INK2, va="top",
     )
     save(fig, "02_seq_vs_embedding")
