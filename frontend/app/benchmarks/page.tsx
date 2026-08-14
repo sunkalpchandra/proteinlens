@@ -634,8 +634,10 @@ export default function BenchmarksPage() {
                 High-cosine, low-identity pairs are representation-space neighbors — the
                 model places them close, which is not by itself evidence of homology or
                 shared function. {anomalous.toLocaleString()} of{" "}
-                {pairs.length.toLocaleString()} pairs have identity &lt; 0.2 with cosine
-                &gt; 0.9.
+                {pairs.length.toLocaleString()} sampled pairs have identity &lt; 0.2 with
+                cosine &gt; 0.9; the sample deliberately includes an embedding
+                nearest-neighbor stratum to populate the high-similarity region, so these
+                are counts within the sample, not corpus-level rates.
               </p>
             </section>
           )}
