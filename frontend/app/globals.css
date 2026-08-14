@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+/* ProteinLens design tokens — dark scientific interface.
+   Palette follows the validated dark-mode reference set (see lib/palette.ts). */
+:root {
+  --page: #0d0d0d;
+  --surface: #161615;
+  --surface-2: #1a1a19;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --ink: #f2f2ef;
+  --ink-2: #c3c2b7;
+  --ink-3: #898781;
+  --grid: #2c2c2a;
+  --accent: #3987e5;
+  --accent-dim: #1c5cab;
+  --mono: var(--font-geist-mono, ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace);
+}
+
+@theme inline {
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-surface2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-ink2: var(--ink-2);
+  --color-ink3: var(--ink-3);
+  --color-accent: var(--accent);
+  --color-bd: var(--border);
+  --color-bds: var(--border-strong);
+  --font-mono: var(--mono);
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--page);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: rgba(57, 135, 229, 0.35);
+}
+
+/* Hairline panel used across the app */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.label-mono {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Thin scrollbars for dense panels */
+.scroll-thin::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: var(--grid);
+  border-radius: 4px;
+}
+
+button {
+  cursor: pointer;
+}
+
+@keyframes pulse-dim {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+.loading-pulse {
+  animation: pulse-dim 1.4s ease-in-out infinite;
+}
