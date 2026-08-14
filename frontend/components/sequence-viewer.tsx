@@ -52,7 +52,25 @@ export function SequenceViewer({
           </span>
         )}
       </div>
-      <div className="flex flex-wrap leading-none">
+      <div
+        className="flex flex-wrap leading-none focus:outline-none focus-visible:ring-1 focus-visible:ring-bds"
+        role={onSelect ? "listbox" : undefined}
+        aria-label={onSelect ? "sequence residues — arrow keys move the selection" : undefined}
+        tabIndex={onSelect ? 0 : undefined}
+        onKeyDown={(e) => {
+          if (!onSelect) return;
+          const step =
+            e.key === "ArrowRight" ? 1
+            : e.key === "ArrowLeft" ? -1
+            : e.key === "ArrowDown" ? 10
+            : e.key === "ArrowUp" ? -10
+            : 0;
+          if (step === 0) return;
+          e.preventDefault();
+          const next = Math.min(sequence.length, Math.max(1, (selected ?? 1) + step));
+          onSelect(next);
+        }}
+      >
         {sequence.split("").map((aa, i) => {
           const pos = i + 1;
           const isSelected = selected === pos;
