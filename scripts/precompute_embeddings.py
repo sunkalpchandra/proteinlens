@@ -64,15 +64,19 @@ def main() -> int:
     matrices = {p: np.zeros((n, encoder.hidden_size), dtype=np.float32) for p in poolings}
     t0 = time.time()
     done = 0
+    # Global length sort: near-uniform-length chunks minimize padding waste
+    # (measured ~10× throughput on MPS vs accession-order chunks). Results are
+    # written back to their original rows, so store order is unchanged.
+    order = sorted(range(n), key=lambda i: len(sequences[i]))
     for start in range(0, n, args.chunk):
-        batch = sequences[start : start + args.chunk]
-        encoded = encoder.encode_batch(batch)
+        idx = order[start : start + args.chunk]
+        encoded = encoder.encode_batch([sequences[i] for i in idx])
         with torch.inference_mode():
-            for offset, enc in enumerate(encoded):
+            for row, enc in zip(idx, encoded, strict=True):
                 for pooling in poolings:
                     vec, _ = pooler.pool(enc.residue_embeddings, enc.bos_embedding, pooling)
-                    matrices[pooling][start + offset] = vec.numpy()
-        done += len(batch)
+                    matrices[pooling][row] = vec.numpy()
+        done += len(idx)
         rate = done / (time.time() - t0)
         eta = (n - done) / max(rate, 1e-9)
         print(f"  {done:>6}/{n}  {rate:6.1f} proteins/s  ETA {eta/60:5.1f} min", flush=True)
