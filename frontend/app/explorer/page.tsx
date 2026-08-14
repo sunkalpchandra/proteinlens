@@ -23,6 +23,7 @@ import {
 } from "@/lib/data";
 import type {
   MapPayload,
+  MapPreset,
   MapPoint,
   Pooling,
   ProteinSummary,
@@ -46,6 +47,8 @@ export default function ExplorerPage() {
 
   const [pooling, setPooling] = useState<Pooling>("mean");
   const [attentionAvailable, setAttentionAvailable] = useState(true);
+  const [preset, setPreset] = useState<MapPreset>("default");
+  const [presetAvailable, setPresetAvailable] = useState(true);
   const [map, setMap] = useState<MapPayload | null>(null);
   const [mapLoading, setMapLoading] = useState(true);
   const [mapError, setMapError] = useState<string | null>(null);
@@ -96,7 +99,7 @@ export default function ExplorerPage() {
     let stale = false;
     setMapLoading(true);
     setMapError(null);
-    getMap(pooling)
+    getMap(pooling, preset)
       .then((payload) => {
         if (stale) return;
         setMap(payload);
@@ -108,6 +111,10 @@ export default function ExplorerPage() {
           // No attention projection: disable the option and fall back.
           setAttentionAvailable(false);
           setPooling("mean");
+        } else if (preset !== "default") {
+          // Preset not built for this deployment — fall back quietly.
+          setPresetAvailable(false);
+          setPreset("default");
         } else {
           setMapError(errorMessage(e));
           setMapLoading(false);
@@ -116,7 +123,7 @@ export default function ExplorerPage() {
     return () => {
       stale = true;
     };
-  }, [pooling]);
+  }, [pooling, preset]);
 
   // --- neighbors for the selection ---------------------------------------------
   useEffect(() => {
@@ -248,6 +255,23 @@ export default function ExplorerPage() {
             <option value="mean">pooling: mean</option>
             <option value="attention" disabled={!attentionAvailable}>
               pooling: attention{attentionAvailable ? "" : " (n/a)"}
+            </option>
+          </select>
+
+          <select
+            value={preset}
+            onChange={(e) => setPreset(e.target.value as MapPreset)}
+            className={SELECT_CLS}
+            aria-label="UMAP neighborhood preset"
+            title="UMAP neighborhood: local sharpens fine structure, global preserves broad layout"
+            disabled={pooling !== "mean"}
+          >
+            <option value="default">umap: balanced</option>
+            <option value="local" disabled={!presetAvailable}>
+              umap: local (n=5)
+            </option>
+            <option value="global" disabled={!presetAvailable}>
+              umap: global (n=50)
             </option>
           </select>
 
