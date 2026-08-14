@@ -1,0 +1,56 @@
+{
+  "experiment_id": "20260814_144815_attention_pooler_supcon_39c60f",
+  "kind": "attention_pooler_supcon",
+  "created_at": "2026-08-14T14:48:15.686655+00:00",
+  "git_commit": "9c1c4994ab55e55547d87a869c11b172dd1a1c70",
+  "config": {
+    "corpus": "data/processed/proteins.parquet",
+    "splits": "data/processed/splits.json",
+    "out": "data/embeddings/attention_pooler_supcon.pt",
+    "objective": "supcon",
+    "temperature": 0.1,
+    "model": "facebook/esm2_t12_35M_UR50D",
+    "max_classes": 120,
+    "min_members": 8,
+    "per_family": 20,
+    "holdout_frac": 0.15,
+    "epochs": 30,
+    "patience": 4,
+    "batch_size": 32,
+    "lr": 0.001,
+    "seed": 42
+  },
+  "metrics": {
+    "best_holdout_metric": 0.9555555555555556,
+    "n_train": 1460,
+    "n_holdout": 270,
+    "n_classes": 120,
+    "history": [
+      {
+        "epoch": 0,
+        "train_loss": 1.9138,
+        "val_1nn_acc": 0.9556
+      },
+      {
+        "epoch": 1,
+        "train_loss": 1.5428,
+        "val_1nn_acc": 0.9519
+      },
+      {
+        "epoch": 2,
+        "train_loss": 1.544,
+        "val_1nn_acc": 0.9481
+      },
+      {
+        "epoch": 3,
+        "train_loss": 1.5578,
+        "val_1nn_acc": 0.9444
+      },
+      {
+        "epoch": 4,
+        "train_loss": 1.474,
+        "val_1nn_acc": 0.9481
+      }
+    ]
+  }
+}
