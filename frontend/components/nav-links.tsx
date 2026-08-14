@@ -7,6 +7,7 @@ const LINKS = [
   { href: "/explorer", label: "Explorer" },
   { href: "/search", label: "Search" },
   { href: "/mutation", label: "Mutation" },
+  { href: "/clusters", label: "Clusters" },
   { href: "/benchmarks", label: "Benchmarks" },
   { href: "/about", label: "About" },
 ];
