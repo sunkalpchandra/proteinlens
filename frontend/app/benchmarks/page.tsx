@@ -7,7 +7,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ApiError, getBenchmark } from "@/lib/data";
 import { OTHER_COLOR, SERIES } from "@/lib/palette";
-import type { BenchmarkPayload, BenchmarkRow } from "@/lib/types";
+import type { BenchmarkPayload, BenchmarkRow, ExtendedBenchmarkRow } from "@/lib/types";
 
 const GRID = "#2c2c2a";
 const ACCENT = "var(--accent)";
@@ -299,6 +299,250 @@ function StabilityTable({ rows }: { rows: BenchmarkRow[] }) {
   );
 }
 
+/* -------------------------------------------------------- extended studies */
+
+const EX_W = 720;
+const EX_H = 260;
+const EX_M = { t: 14, r: 20, b: 36, l: 46 };
+const EX_X_TICKS = [8, 35, 150];
+const EX_Y_TICKS = [0, 0.25, 0.5, 0.75, 1];
+
+const EX_SERIES = [
+  { key: "probe_f1_mean", label: "probe F1", color: SERIES[0] },
+  { key: "p_at_10", label: "P@10", color: SERIES[2] },
+] as const;
+
+function ScalingChart({ rows }: { rows: ExtendedBenchmarkRow[] }) {
+  const points = [...rows].sort((a, b) => a.params_m - b.params_m);
+  const plotW = EX_W - EX_M.l - EX_M.r;
+  const plotH = EX_H - EX_M.t - EX_M.b;
+
+  const logMin =
+    Math.log10(Math.min(EX_X_TICKS[0], ...points.map((p) => p.params_m))) - 0.08;
+  const logMax =
+    Math.log10(
+      Math.max(EX_X_TICKS[EX_X_TICKS.length - 1], ...points.map((p) => p.params_m)),
+    ) + 0.08;
+  const px = (params: number) =>
+    EX_M.l + ((Math.log10(params) - logMin) / (logMax - logMin)) * plotW;
+  const py = (v: number) => EX_M.t + (1 - v) * plotH;
+
+  return (
+    <div>
+      <div className="mb-2 flex flex-wrap gap-x-4 gap-y-1">
+        {EX_SERIES.map((s) => (
+          <span
+            key={s.key}
+            className="flex items-center gap-1.5 font-mono text-[11px] text-ink2"
+          >
+            <span
+              className="inline-block h-2 w-2 rounded-full"
+              style={{ background: s.color }}
+            />
+            {s.label}
+          </span>
+        ))}
+      </div>
+      <svg viewBox={`0 0 ${EX_W} ${EX_H}`} className="w-full" role="img">
+        {EX_X_TICKS.map((t) => (
+          <g key={`x${t}`}>
+            <line
+              x1={px(t)}
+              x2={px(t)}
+              y1={EX_M.t}
+              y2={EX_M.t + plotH}
+              stroke={GRID}
+              strokeWidth={1}
+            />
+            <text
+              x={px(t)}
+              y={EX_M.t + plotH + 14}
+              textAnchor="middle"
+              style={{ fill: "var(--ink-3)", fontFamily: "var(--mono)", fontSize: 10 }}
+            >
+              {t}
+            </text>
+          </g>
+        ))}
+        {EX_Y_TICKS.map((t) => (
+          <g key={`y${t}`}>
+            <line
+              x1={EX_M.l}
+              x2={EX_M.l + plotW}
+              y1={py(t)}
+              y2={py(t)}
+              stroke={GRID}
+              strokeWidth={1}
+            />
+            <text
+              x={EX_M.l - 6}
+              y={py(t) + 3}
+              textAnchor="end"
+              style={{ fill: "var(--ink-3)", fontFamily: "var(--mono)", fontSize: 10 }}
+            >
+              {t}
+            </text>
+          </g>
+        ))}
+        <text
+          x={EX_M.l + plotW / 2}
+          y={EX_H - 4}
+          textAnchor="middle"
+          style={{ fill: "var(--ink-3)", fontFamily: "var(--mono)", fontSize: 10 }}
+        >
+          parameters (M, log scale)
+        </text>
+        {EX_SERIES.map((s) => (
+          <g key={s.key}>
+            <polyline
+              points={points
+                .map((p) => `${px(p.params_m)},${py(p[s.key])}`)
+                .join(" ")}
+              fill="none"
+              stroke={s.color}
+              strokeWidth={2}
+            />
+            {points.map((p) => {
+              const x = px(p.params_m);
+              const y = py(p[s.key]);
+              const other =
+                s.key === "probe_f1_mean" ? p.p_at_10 : p.probe_f1_mean;
+              const above = p[s.key] >= other;
+              return (
+                <g key={p.representation}>
+                  <circle cx={x} cy={y} r={3.5} fill={s.color} />
+                  <text
+                    x={x}
+                    y={above ? y - 8 : y + 16}
+                    textAnchor="middle"
+                    className="tabular"
+                    style={{
+                      fill: "var(--ink-2)",
+                      fontFamily: "var(--mono)",
+                      fontSize: 10,
+                    }}
+                  >
+                    {p[s.key].toFixed(3)}
+                  </text>
+                </g>
+              );
+            })}
+          </g>
+        ))}
+      </svg>
+    </div>
+  );
+}
+
+const EX_METRIC_COLS = [
+  { key: "probe_f1_mean", label: "probe F1" },
+  { key: "p_at_1", label: "P@1" },
+  { key: "p_at_10", label: "P@10" },
+  { key: "nmi", label: "NMI" },
+] as const;
+
+function PoolingObjectiveTable({ rows }: { rows: ExtendedBenchmarkRow[] }) {
+  const best = EX_METRIC_COLS.map((c) =>
+    Math.max(...rows.map((r) => r[c.key])),
+  );
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[460px] max-w-xl text-[12.5px]">
+        <thead>
+          <tr className="text-left">
+            <th className="label-mono pb-2 font-normal">representation</th>
+            {EX_METRIC_COLS.map((c) => (
+              <th key={c.key} className="label-mono pb-2 pl-4 text-right font-normal">
+                {c.label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.representation} className="border-t border-bd">
+              <td className="py-1.5 font-mono text-ink2">{r.representation}</td>
+              {EX_METRIC_COLS.map((c, i) => (
+                <MetricTd key={c.key} value={r[c.key]} best={best[i]} />
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function ExtendedTable({ rows }: { rows: ExtendedBenchmarkRow[] }) {
+  const sorted = [...rows].sort(
+    (a, b) => a.group.localeCompare(b.group) || a.params_m - b.params_m,
+  );
+  const hasStructure = sorted.some((r) => r.group === "structure-aware");
+  return (
+    <div>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[720px] text-[12.5px]">
+          <thead>
+            <tr className="text-left">
+              <th className="label-mono pb-2 font-normal">representation</th>
+              <th className="label-mono pb-2 font-normal">group</th>
+              <th className="label-mono pb-2 pl-4 text-right font-normal">params (M)</th>
+              <th className="label-mono pb-2 pl-4 text-right font-normal">dim</th>
+              {EX_METRIC_COLS.map((c) => (
+                <th key={c.key} className="label-mono pb-2 pl-4 text-right font-normal">
+                  {c.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map((r) => (
+              <tr key={`${r.group}-${r.representation}`} className="border-t border-bd">
+                <td className="py-1.5 font-mono text-ink2">
+                  {r.representation}
+                  {r.group === "structure-aware" && (
+                    <a
+                      href="#prostt5-note"
+                      className="pl-0.5 align-super font-mono text-[10px] text-ink3"
+                    >
+                      *
+                    </a>
+                  )}
+                </td>
+                <td className="py-1.5">
+                  <span className="rounded border border-bd bg-surface2 px-1.5 py-0.5 font-mono text-[10px] text-ink3">
+                    {r.group}
+                  </span>
+                </td>
+                <td className="tabular py-1.5 pl-4 text-right font-mono text-ink2">
+                  {r.params_m}
+                </td>
+                <td className="tabular py-1.5 pl-4 text-right font-mono text-ink2">
+                  {r.dim}
+                </td>
+                {EX_METRIC_COLS.map((c) => (
+                  <td
+                    key={c.key}
+                    className="tabular py-1.5 pl-4 text-right font-mono text-ink2"
+                  >
+                    {fmt(r[c.key])}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {hasStructure && (
+        <p id="prostt5-note" className="mt-2 text-[12px] text-ink3">
+          * ProstT5 carries structure supervision and ~35x the parameters — a
+          reference point, not a like-for-like comparison.
+        </p>
+      )}
+    </div>
+  );
+}
+
 /* ------------------------------------------------- identity vs cosine plot */
 
 const SC_W = 640;
@@ -509,6 +753,11 @@ export default function BenchmarksPage() {
   const retrievalRows = rows.filter((r) => r.axis === "retrieval");
   const clusteringRows = rows.filter((r) => r.axis === "clustering");
   const stabilityRows = rows.filter((r) => r.axis === "stability");
+  const extendedRows = payload?.extended ?? [];
+  const scalingRows = extendedRows.filter(
+    (r) => r.group === "esm2-scaling" && r.pooling === "mean",
+  );
+  const objectiveRows = extendedRows.filter((r) => r.group === "pooling-objective");
   const pairs = payload?.seq_vs_emb ?? [];
   const anomalous = pairs.filter((p) => p.identity < 0.2 && p.cosine > 0.9).length;
 
@@ -619,7 +868,51 @@ export default function BenchmarksPage() {
             </section>
           )}
 
-          {/* e) Identity vs cosine ------------------------------------------- */}
+          {/* e) Extended studies --------------------------------------------- */}
+          {extendedRows.length > 0 && (
+            <section className="panel p-4">
+              <h2 className="label-mono">Extended studies</h2>
+              <p className="mt-1 text-[12px] text-ink3">
+                Checkpoint scaling, pooling training objectives, and a
+                structure-aware reference model on the shared evaluation subset.
+              </p>
+
+              {scalingRows.length > 0 && (
+                <div className="mt-4">
+                  <p className="mb-1.5 font-mono text-[11px] text-ink2">
+                    checkpoint scaling
+                  </p>
+                  <ScalingChart rows={scalingRows} />
+                  <p className="mt-2 text-[12px] text-ink3">
+                    ESM-2 checkpoint scale vs representation quality on the shared
+                    3k-protein subset (mean pooling).
+                  </p>
+                </div>
+              )}
+
+              {objectiveRows.length > 0 && (
+                <div className="mt-5">
+                  <p className="mb-1.5 font-mono text-[11px] text-ink2">
+                    pooling objective
+                  </p>
+                  <PoolingObjectiveTable rows={objectiveRows} />
+                  <p className="mt-2 text-[12px] text-ink3">
+                    Attention pooler trained with cross-entropy vs
+                    supervised-contrastive objective (same frozen encoder).
+                  </p>
+                </div>
+              )}
+
+              <div className="mt-5">
+                <p className="mb-1.5 font-mono text-[11px] text-ink2">
+                  all extended rows
+                </p>
+                <ExtendedTable rows={extendedRows} />
+              </div>
+            </section>
+          )}
+
+          {/* f) Identity vs cosine ------------------------------------------- */}
           {pairs.length > 0 && (
             <section className="panel p-4">
               <h2 className="label-mono">Sequence identity vs embedding cosine</h2>
