@@ -1,0 +1,35 @@
+# Render blueprint for the ProteinLens API.
+#
+# The API serves precomputed artifacts (embeddings, FAISS indexes, map payloads)
+# plus live ESM-2 inference on CPU. Artifacts are built once during deploy from
+# real UniProt data; the 35M checkpoint is small enough for CPU inference on a
+# standard instance. The public demo frontend does NOT need this service — it
+# runs entirely from the static demo bundle. Deploy this only for the full
+# live experience.
+
+services:
+  - type: web
+    name: proteinlens-api
+    runtime: python
+    plan: standard  # ESM-2 35M on CPU wants ~2GB RAM
+    buildCommand: |
+      pip install -r requirements.txt
+      pip install -e . --no-deps
+      python scripts/download_data.py
+      python scripts/preprocess.py --target 12000
+      python scripts/make_splits.py
+      python scripts/train_attention_pooler.py
+      python scripts/precompute_embeddings.py
+      python scripts/build_index.py
+    startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.0"
+      - key: PROTEINLENS_DEVICE
+        value: cpu
+      - key: PROTEINLENS_CORS_ORIGINS
+        value: https://proteinlens.vercel.app,http://localhost:3000
+    disk:
+      name: proteinlens-data
+      mountPath: /opt/render/project/src/data
+      sizeGB: 5

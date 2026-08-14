@@ -1,9 +1,9 @@
 PYTHON ?= .venv/bin/python
 PIP    ?= .venv/bin/pip
 
-.PHONY: setup venv install data embeddings index benchmarks figures demo api frontend test lint clean
+.PHONY: setup venv install data splits pooler embeddings index benchmarks figures demo api frontend test lint clean
 
-setup: venv install data embeddings index demo   ## Full local setup: env + data + embeddings + index + demo bundle
+setup: venv install data splits pooler embeddings index demo   ## Full local pipeline through the demo bundle
 
 venv:
 	python3 -m venv .venv
@@ -11,10 +11,18 @@ venv:
 
 install:
 	$(PIP) install -r requirements.txt
+	$(PIP) install -e . --no-deps
+	@if [ "$$(uname)" = "Darwin" ]; then bash scripts/fix_macos_libomp.sh || true; fi
 
 data:
 	$(PYTHON) scripts/download_data.py
 	$(PYTHON) scripts/preprocess.py
+
+splits:
+	$(PYTHON) scripts/make_splits.py
+
+pooler:
+	$(PYTHON) scripts/train_attention_pooler.py
 
 embeddings:
 	$(PYTHON) scripts/precompute_embeddings.py
