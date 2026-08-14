@@ -123,11 +123,17 @@ def main() -> int:
     (out / "landscapes").mkdir(parents=True, exist_ok=True)
 
     # --- map + finder ---------------------------------------------------------
-    demo_map = {
-        **{k: v for k, v in map_payload.items() if k != "points"},
-        "points": [point_of[acc] for acc in subset if acc in point_of],
-    }
-    (out / "map_mean.json").write_text(json.dumps(demo_map))
+    for suffix in ("", "_local", "_global"):
+        src = Path(f"data/index/map_mean{suffix}.json")
+        if not src.exists():
+            continue
+        full = json.loads(src.read_text()) if suffix else map_payload
+        by_id = {p["id"]: p for p in full["points"]}
+        demo_map = {
+            **{k: v for k, v in full.items() if k != "points"},
+            "points": [by_id[acc] for acc in subset if acc in by_id],
+        }
+        (out / f"map_mean{suffix}.json").write_text(json.dumps(demo_map))
     # Cluster summaries travel as-is: they describe full-corpus clusters, and
     # the map subset carries the same cluster ids.
     clusters_src = Path("data/index/clusters_mean.json")
