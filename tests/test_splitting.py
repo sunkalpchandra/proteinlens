@@ -99,3 +99,32 @@ class TestSplits:
         a, _ = make_splits(corpus, seed=5)
         b, _ = make_splits(corpus, seed=5)
         assert a.equals(b)
+
+
+class TestMMseqsGroups:
+    mmseqs_missing = __import__("shutil").which("mmseqs") is None
+
+    @pytest.mark.skipif(mmseqs_missing, reason="mmseqs binary not installed")
+    def test_identical_sequences_share_cluster(self):
+        from ml.splitting import mmseqs_groups
+
+        base = "MKTVLQAAAAWWCHACDEFGHIKLMNPQRSTVWY" * 3
+        df = pd.DataFrame([
+            {"accession": "A1", "sequence": base},
+            {"accession": "A2", "sequence": base[:-2] + "AA"},   # ~98% identical
+            {"accession": "B1", "sequence": "GPGPGPWWNNQQRRKKDDEEFFYYHH" * 4},
+        ])
+        groups, stats = mmseqs_groups(df)
+        assert groups.iloc[0] == groups.iloc[1]
+        assert groups.iloc[0] != groups.iloc[2]
+        assert stats["method"] == "mmseqs"
+
+    @pytest.mark.skipif(mmseqs_missing, reason="mmseqs binary not installed")
+    def test_make_splits_accepts_mmseqs_method(self, corpus):
+        splits, summary = make_splits(corpus, seed=0, method="mmseqs")
+        assert summary["method"] == "mmseqs"
+        assert set(splits.unique()) <= {"train", "val", "test"}
+
+    def test_unknown_method_rejected(self, corpus):
+        with pytest.raises(ValueError, match="method"):
+            make_splits(corpus, method="blastclust")
