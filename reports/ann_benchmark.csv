@@ -1,0 +1,7 @@
+regime,backend,n_vectors,dim,build_s,qps,recall@10
+corpus-12k,flat,12005,480,0.03,11031.0,1.0
+corpus-12k,hnsw,12005,480,0.75,34609.3,0.9993
+corpus-12k,ivf,12005,480,0.27,38061.9,0.969
+synthetic-150k,flat,150000,480,0.19,4347.2,1.0
+synthetic-150k,hnsw,150000,480,48.88,11088.8,0.9995
+synthetic-150k,ivf,150000,480,67.93,7287.9,1.0
