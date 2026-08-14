@@ -190,6 +190,35 @@ def cosine(a: np.ndarray, b: np.ndarray) -> float:
     return float(np.dot(a, b) / max(float(np.linalg.norm(a) * np.linalg.norm(b)), 1e-12))
 
 
+MAX_TRAJECTORY_STEPS = 10
+
+
+def build_mutation_chain(
+    sequence: str, mutations: list[str], max_steps: int = MAX_TRAJECTORY_STEPS
+) -> tuple[list[str], list[str]]:
+    """Validate a cumulative mutation chain; returns (step sequences, labels).
+
+    Pure validation + string work — no model involved, so callers can reject
+    bad chains before paying for encoder loading or inference.
+    """
+    seq = validate_sequence(sequence)
+    if not mutations:
+        raise SequenceValidationError("A trajectory needs at least one mutation.")
+    if len(mutations) > max_steps:
+        raise SequenceValidationError(
+            f"Trajectory too long ({len(mutations)} steps; maximum {max_steps})."
+        )
+    sequences = [seq]
+    labels: list[str] = []
+    current = seq
+    for text in mutations:
+        mutation = parse_mutation(text)
+        current = apply_mutation(current, mutation)  # validates vs. current step
+        sequences.append(current)
+        labels.append(mutation.label)
+    return sequences, labels
+
+
 class TrajectoryAnalyzer:
     """Sequential mutation paths in representation space.
 
@@ -200,7 +229,7 @@ class TrajectoryAnalyzer:
     evolutionary or fitness trajectory.
     """
 
-    MAX_STEPS = 10
+    MAX_STEPS = MAX_TRAJECTORY_STEPS
 
     def __init__(self, pipeline: EmbeddingPipeline) -> None:
         self.pipeline = pipeline
@@ -208,22 +237,7 @@ class TrajectoryAnalyzer:
     def trajectory(
         self, sequence: str, mutations: list[str], pooling: str = "mean"
     ) -> dict:
-        seq = validate_sequence(sequence)
-        if not mutations:
-            raise SequenceValidationError("A trajectory needs at least one mutation.")
-        if len(mutations) > self.MAX_STEPS:
-            raise SequenceValidationError(
-                f"Trajectory too long ({len(mutations)} steps; maximum {self.MAX_STEPS})."
-            )
-
-        sequences = [seq]
-        labels: list[str] = []
-        current = seq
-        for text in mutations:
-            mutation = parse_mutation(text)
-            current = apply_mutation(current, mutation)  # validates vs. current step
-            sequences.append(current)
-            labels.append(mutation.label)
+        sequences, labels = build_mutation_chain(sequence, mutations, self.MAX_STEPS)
 
         encoded = self.pipeline.encoder.encode_batch(sequences)
         vectors = []
