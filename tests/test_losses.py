@@ -12,23 +12,31 @@ def test_clustered_embeddings_score_lower_than_shuffled():
     assert supcon_loss(clustered, labels) < supcon_loss(shuffled, labels)
 
 
-def test_perfectly_collapsed_classes_approach_lower_bound():
-    centers = torch.nn.functional.normalize(torch.randn(2, 32), dim=1) * 10
+def test_perfectly_collapsed_classes_hit_the_analytic_floor():
+    """With every class collapsed to a point and classes well separated, the
+    loss floor is log(P) for P positives per anchor (softmax mass splits
+    evenly across identical positives) — here log(5)."""
+    import math
+
+    torch.manual_seed(3)
+    centers = torch.nn.functional.normalize(torch.randn(2, 32), dim=1)
     labels = torch.tensor([0] * 6 + [1] * 6)
     embeddings = centers[labels]
     loss = supcon_loss(embeddings, labels, temperature=0.1)
-    assert loss.item() < 0.5
+    assert abs(loss.item() - math.log(5)) < 0.3
 
 
-def test_anchor_without_positive_contributes_nothing():
+def test_singleton_class_is_negative_only():
+    """A positive-less anchor adds no anchor term (loss stays finite) but it
+    still serves as a negative: perturbing it must change the loss."""
     torch.manual_seed(1)
     embeddings = torch.randn(5, 8)
     labels = torch.tensor([0, 0, 1, 1, 2])  # class 2 is a singleton
-    with_singleton = supcon_loss(embeddings, labels)
-    without = supcon_loss(embeddings[:4], labels[:4])
-    assert torch.isfinite(with_singleton)
-    # Removing the positive-less anchor leaves the loss unchanged.
-    assert torch.allclose(with_singleton, without, atol=1e-5)
+    base = supcon_loss(embeddings, labels)
+    assert torch.isfinite(base)
+    moved = embeddings.clone()
+    moved[4] += 3.0
+    assert not torch.allclose(base, supcon_loss(moved, labels), atol=1e-6)
 
 
 def test_all_singletons_returns_zero_with_grad():
