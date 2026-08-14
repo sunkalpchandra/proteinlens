@@ -74,9 +74,6 @@ def main() -> int:
     return 0
 
 
-if __name__ == "__main__":
-    sys.exit(main())
-
 
 EXT_BEGIN = "<!-- EXTENDED:BEGIN -->"
 EXT_END = "<!-- EXTENDED:END -->"
@@ -111,3 +108,6 @@ def update_extended() -> None:
     text = re.sub(re.escape(EXT_BEGIN) + r".*?" + re.escape(EXT_END), block, text, flags=re.S)
     readme.write_text(text)
     print("README extended block updated.")
+
+if __name__ == "__main__":
+    sys.exit(main())
