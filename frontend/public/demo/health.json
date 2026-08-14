@@ -1,0 +1,1 @@
+{"status": "ok", "model": "facebook/esm2_t12_35M_UR50D", "corpus_size": 1199, "poolings": ["mean"], "device": "static demo", "encoder_loaded": false}
