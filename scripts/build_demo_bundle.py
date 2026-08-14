@@ -105,6 +105,14 @@ def main() -> int:
     map_payload = json.loads(Path("data/index/map_mean.json").read_text())
     point_of = {p["id"]: p for p in map_payload["points"]}
 
+    domains_path = Path("data/processed/domains.parquet")
+    domains_by_acc: dict[str, list[dict]] = {}
+    if domains_path.exists():
+        for row in pd.read_parquet(domains_path).itertuples():
+            domains_by_acc.setdefault(row.accession, []).append(
+                {"name": row.name, "start": int(row.start), "end": int(row.end)}
+            )
+
     subset = select_subset(df, args.size, args.seed)
     subset_set = set(subset)
     print(f"Demo subset: {len(subset)} proteins "
@@ -193,6 +201,8 @@ def main() -> int:
         }
         if acc in attention:
             profile["attention_weights"] = attention[acc]
+        if acc in domains_by_acc:
+            profile["domains"] = domains_by_acc[acc]
         (out / "profiles" / f"{acc}.json").write_text(json.dumps(profile))
 
     # --- benchmark + health -----------------------------------------------------------
@@ -208,6 +218,11 @@ def main() -> int:
         md = Path("reports/benchmark.md")
         if md.exists():
             payload["markdown"] = md.read_text()
+        extended = Path("reports/extended_benchmark.csv")
+        if extended.exists():
+            payload["extended"] = json.loads(
+                pd.read_csv(extended).to_json(orient="records")
+            )
         (out / "benchmark.json").write_text(json.dumps(payload))
     else:
         print("  WARNING: no reports/benchmark.csv — demo benchmark page will 404")
