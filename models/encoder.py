@@ -54,10 +54,19 @@ class ESM2Encoder:
         self,
         model_name: str = DEFAULT_MODEL,
         device: str | None = None,
-        token_budget: int = DEFAULT_TOKEN_BUDGET,
+        token_budget: int | None = None,
     ) -> None:
         self.model_name = model_name
         self.device = resolve_device(device)
+        if token_budget is None:
+            # Larger checkpoints get smaller per-forward budgets (see registry);
+            # unknown/custom checkpoints fall back to the conservative default.
+            try:
+                from models.registry import spec_for
+
+                token_budget = spec_for(model_name).token_budget
+            except KeyError:
+                token_budget = DEFAULT_TOKEN_BUDGET
         self.token_budget = token_budget
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         # add_pooling_layer=False: we pool ourselves; avoids a randomly
