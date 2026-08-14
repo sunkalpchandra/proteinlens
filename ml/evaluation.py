@@ -25,28 +25,35 @@ def retrieval_precision_at_k(
 ) -> dict:
     """Mean fraction of top-k cosine neighbors sharing the query's label.
 
-    Only proteins whose label occurs ≥ 2 times can have a correct neighbor;
-    others are excluded from the average (reported as ``n_evaluated``).
+    The index contains the **whole corpus** — unlabeled and singleton-label
+    proteins remain retrieval candidates (a neighbor without the query's label
+    counts as a miss), exactly like a real search. Only the *query* set is
+    restricted to proteins whose label occurs ≥ 2 times, since no other
+    protein can possibly be a correct answer for the rest.
     """
-    labeled = labels.notna().to_numpy()
-    counts = labels.value_counts()
-    eligible = labeled & (labels.map(counts).fillna(0).to_numpy() >= 2)
-
-    x = l2_normalize(np.ascontiguousarray(embeddings[eligible], dtype=np.float32))
-    y = labels[eligible].to_numpy()
+    x = l2_normalize(np.ascontiguousarray(embeddings, dtype=np.float32))
+    y = labels.to_numpy()
     index = faiss.IndexFlatIP(x.shape[1])
     index.add(x)
+
+    labeled = labels.notna().to_numpy()
+    counts = labels.value_counts()
+    eligible = np.flatnonzero(labeled & (labels.map(counts).fillna(0).to_numpy() >= 2))
+
     k_max = max(ks)
-    _, rows = index.search(x, k_max + 1)
+    _, rows = index.search(x[eligible], k_max + 1)
 
     hits = {k: [] for k in ks}
-    for i in range(len(x)):
-        neighbors = [r for r in rows[i] if r != i][:k_max]
-        matches = np.array([y[r] == y[i] for r in neighbors], dtype=np.float32)
+    for qi, i in enumerate(eligible):
+        neighbors = [r for r in rows[qi] if r != i][:k_max]
+        matches = np.array(
+            [y[r] is not None and y[r] == y[i] for r in neighbors], dtype=np.float32
+        )
         for k in ks:
             hits[k].append(matches[:k].mean())
     return {
-        "n_evaluated": int(len(x)),
+        "n_evaluated": int(len(eligible)),
+        "n_index": int(len(x)),
         **{f"precision@{k}": float(np.mean(hits[k])) for k in ks},
     }
 
