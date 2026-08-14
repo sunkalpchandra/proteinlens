@@ -58,3 +58,6 @@ frontend/next-env.d.ts
 .vscode/
 *.log
 frontend/tsconfig.tsbuildinfo
+
+# Derived checkpoint-study artifacts
+data/scaling/
