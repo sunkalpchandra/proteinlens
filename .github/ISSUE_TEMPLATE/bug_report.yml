@@ -1,0 +1,32 @@
+name: Bug report
+description: Something behaves incorrectly
+labels: [bug]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [pipeline scripts, ML modules, API, frontend, demo site, docs]
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: Exact command or interaction, plus the accession/sequence involved.
+      placeholder: |
+        python scripts/run_benchmarks.py --seed 42
+        → traceback / wrong value …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs actual
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      placeholder: "macOS 14 arm64 / 8GB, Python 3.12, torch 2.13, mps"
