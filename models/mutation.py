@@ -184,3 +184,75 @@ class MutationAnalyzer:
             "max_displacement": effects[int(np.argmax(displacements))]["mutation"],
             "min_displacement": effects[int(np.argmin(displacements))]["mutation"],
         }
+
+
+def cosine(a: np.ndarray, b: np.ndarray) -> float:
+    return float(np.dot(a, b) / max(float(np.linalg.norm(a) * np.linalg.norm(b)), 1e-12))
+
+
+class TrajectoryAnalyzer:
+    """Sequential mutation paths in representation space.
+
+    Mutations apply cumulatively — each label's wild-type letter is validated
+    against the sequence *after* the previous steps, so 'A10G' followed by
+    'G10A' is a legal round trip. All step sequences encode in one batched
+    pass. Reported motion is representation-space displacement, not an
+    evolutionary or fitness trajectory.
+    """
+
+    MAX_STEPS = 10
+
+    def __init__(self, pipeline: EmbeddingPipeline) -> None:
+        self.pipeline = pipeline
+
+    def trajectory(
+        self, sequence: str, mutations: list[str], pooling: str = "mean"
+    ) -> dict:
+        seq = validate_sequence(sequence)
+        if not mutations:
+            raise SequenceValidationError("A trajectory needs at least one mutation.")
+        if len(mutations) > self.MAX_STEPS:
+            raise SequenceValidationError(
+                f"Trajectory too long ({len(mutations)} steps; maximum {self.MAX_STEPS})."
+            )
+
+        sequences = [seq]
+        labels: list[str] = []
+        current = seq
+        for text in mutations:
+            mutation = parse_mutation(text)
+            current = apply_mutation(current, mutation)  # validates vs. current step
+            sequences.append(current)
+            labels.append(mutation.label)
+
+        encoded = self.pipeline.encoder.encode_batch(sequences)
+        vectors = []
+        for enc in encoded:
+            pooled, _ = self.pipeline.pooler.pool(
+                enc.residue_embeddings, enc.bos_embedding, pooling
+            )
+            vectors.append(pooled.numpy().astype(np.float32))
+
+        steps = []
+        for i, label in enumerate(labels):
+            z_prev, z_here = vectors[i], vectors[i + 1]
+            steps.append({
+                "step": i + 1,
+                "mutation": label,
+                "cumulative": labels[: i + 1],
+                "step_displacement": float(np.linalg.norm(z_here - z_prev)),
+                "displacement_from_wt": float(np.linalg.norm(z_here - vectors[0])),
+                "cosine_to_wt": cosine(vectors[0], z_here),
+            })
+
+        path_length = float(sum(s["step_displacement"] for s in steps))
+        net = steps[-1]["displacement_from_wt"]
+        return {
+            "pooling": pooling,
+            "n_steps": len(steps),
+            "steps": steps,
+            "path_length": path_length,
+            "net_displacement": net,
+            # 1.0 = every step moved the same direction; near 0 = wandering.
+            "directness": net / max(path_length, 1e-12),
+        }
