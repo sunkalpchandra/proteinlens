@@ -33,12 +33,14 @@ class ProstT5Encoder:
     """Frozen ProstT5 encoder producing mean-pooled per-protein embeddings."""
 
     def __init__(self, device: str | None = None, half: bool = True) -> None:
-        from transformers import T5EncoderModel, T5Tokenizer
+        from transformers import AutoTokenizer, T5EncoderModel
 
         from models.encoder import resolve_device
 
         self.device = resolve_device(device)
-        self.tokenizer = T5Tokenizer.from_pretrained(PROST_MODEL, do_lower_case=False)
+        # Fast tokenizer: the slow T5 path misroutes ProstT5's sentencepiece
+        # model through a tiktoken parser in transformers v5 and crashes.
+        self.tokenizer = AutoTokenizer.from_pretrained(PROST_MODEL, use_fast=True)
         self.model = T5EncoderModel.from_pretrained(PROST_MODEL)
         # fp16 halves the 4.8GB fp32 footprint; CPU stays fp32 (no half kernels).
         self.half = half and self.device.type != "cpu"
