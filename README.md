@@ -93,9 +93,11 @@ The attention pooler is the only learned component: trained jointly with a linea
 UniProt family labels (train split only, encoder frozen), then reused corpus-wide. Its weights
 `αᵢ` double as a model-dependent interpretability signal.
 
-**Retrieval.** Embeddings are L2-normalized so cosine similarity equals inner product, then
-indexed with FAISS `IndexFlatIP` — exact search (no ANN recall loss at 12k scale; the interface
-is unchanged if swapped for IVF/HNSW at larger scale).
+**Retrieval.** Embeddings are L2-normalized so cosine similarity equals inner product. Three
+index backends sit behind one interface — exact `flat` (default up to 50k vectors), `hnsw`, and
+`ivf` — with `auto_backend` switching by corpus size. Measured on this host
+(`reports/ann_benchmark.md`): at 150k vectors HNSW answers at **2.6× the QPS of exact search with
+0.9995 recall@10**; at 12k, exact search already runs at ~11k QPS and stays the default.
 
 ```text
 sim(zᵢ, zⱼ) = (zᵢ · zⱼ) / (‖zᵢ‖ ‖zⱼ‖)
@@ -148,6 +150,15 @@ documented in [Limitations](#limitations).
 Because families *are* the grouping unit, probe tasks target labels that cut across families
 (enzyme/non-enzyme, EC top class, subcellular localization) — a genuine generalization test, not
 family memorization.
+
+**Validation against identity clustering.** `make_splits --method mmseqs` groups by MMseqs2
+clusters (30% identity, 80% coverage) instead. The comparison
+(`reports/split_methods.md`) is decisive: on 200,000 random pairs, **zero** pairs are joined by
+identity clustering but separated by the annotation grouping — annotation union-find is strictly
+more conservative (it additionally joins ~6k pairs that <30% identity cannot see). Probe metrics
+under MMseqs splits come out *higher* (e.g. EC class accuracy 0.70 vs 0.47), consistent with the
+looser grouping readmitting homology — the annotation-grouped numbers reported here are the
+harder, honest ones.
 
 ## Installation
 
