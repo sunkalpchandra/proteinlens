@@ -14,7 +14,7 @@ from api.schemas import (
 )
 from api.state import AppState, get_state
 from ml.sequence import validate_sequence
-from models.mutation import TrajectoryAnalyzer
+from models.mutation import TrajectoryAnalyzer, build_mutation_chain
 
 router = APIRouter(tags=["mutation"])
 
@@ -58,6 +58,8 @@ def trajectory(
     req: TrajectoryRequest, state: AppState = Depends(get_state)
 ) -> TrajectoryResponse:
     seq = _resolve_sequence(state, req.accession, req.sequence)
+    # Cheap chain validation first — bad requests must not trigger model loading.
+    build_mutation_chain(seq, req.mutations)
     analyzer = TrajectoryAnalyzer(state.pipeline)
     with state.encoder_lock:
         result = analyzer.trajectory(seq, req.mutations, req.pooling)
