@@ -1,0 +1,69 @@
+{
+  "experiment_id": "20260814_131949_ann_benchmark_7f9632",
+  "kind": "ann_benchmark",
+  "created_at": "2026-08-14T13:19:49.630721+00:00",
+  "git_commit": "2858a84439a92a7b422ea5ec624660c824ab9c57",
+  "config": {
+    "scale_n": 150000,
+    "queries": 1000,
+    "seed": 42
+  },
+  "metrics": {
+    "rows": [
+      {
+        "regime": "corpus-12k",
+        "backend": "flat",
+        "n_vectors": 12005,
+        "dim": 480,
+        "build_s": 0.03,
+        "qps": 11031.0,
+        "recall@10": 1.0
+      },
+      {
+        "regime": "corpus-12k",
+        "backend": "hnsw",
+        "n_vectors": 12005,
+        "dim": 480,
+        "build_s": 0.75,
+        "qps": 34609.3,
+        "recall@10": 0.9993
+      },
+      {
+        "regime": "corpus-12k",
+        "backend": "ivf",
+        "n_vectors": 12005,
+        "dim": 480,
+        "build_s": 0.27,
+        "qps": 38061.9,
+        "recall@10": 0.969
+      },
+      {
+        "regime": "synthetic-150k",
+        "backend": "flat",
+        "n_vectors": 150000,
+        "dim": 480,
+        "build_s": 0.19,
+        "qps": 4347.2,
+        "recall@10": 1.0
+      },
+      {
+        "regime": "synthetic-150k",
+        "backend": "hnsw",
+        "n_vectors": 150000,
+        "dim": 480,
+        "build_s": 48.88,
+        "qps": 11088.8,
+        "recall@10": 0.9995
+      },
+      {
+        "regime": "synthetic-150k",
+        "backend": "ivf",
+        "n_vectors": 150000,
+        "dim": 480,
+        "build_s": 67.93,
+        "qps": 7287.9,
+        "recall@10": 1.0
+      }
+    ]
+  }
+}
