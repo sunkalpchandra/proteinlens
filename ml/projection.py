@@ -73,8 +73,12 @@ class ProjectionCache:
         path = self.directory / f"projection_{key}.npz"
         if path.exists():
             payload = np.load(path, allow_pickle=False)
-            info = json.loads(str(payload["info"]))
-            return payload["coords"], info, True
+            coords = payload["coords"]
+            # Belt-and-braces: a fingerprint collision or hand-copied cache
+            # file must never silently pair coords with the wrong matrix.
+            if coords.shape[0] == embeddings.shape[0]:
+                info = json.loads(str(payload["info"]))
+                return coords, info, True
         coords, info = compute_projection(embeddings, params)
         np.savez_compressed(
             path,

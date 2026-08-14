@@ -49,7 +49,13 @@ def build_map_payload(
     seed: int,
 ) -> dict:
     embeddings = np.asarray(store.matrix(pooling))
-    fingerprint = f"{store.meta['corpus_sha256_16']}:{pooling}"
+    # Fingerprint the actual matrix bytes: re-embedding the same corpus with a
+    # different model or a retrained pooler must invalidate cached projections.
+    import hashlib
+
+    fingerprint = hashlib.sha256(
+        np.ascontiguousarray(embeddings, dtype=np.float32).tobytes()
+    ).hexdigest()[:16]
 
     params = ProjectionParams(pooling=pooling, seed=seed)
     cache = ProjectionCache(out_dir / "projections")
