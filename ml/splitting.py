@@ -152,7 +152,10 @@ def make_splits(
     assignment: dict[str, str] = {}
     for group, size in order.items():
         deficits = {name: (targets[name] - filled[name]) / max(targets[name], 1) for name in names}
-        best = max(names, key=lambda n: (deficits[n], rng.random()))
+        # Ties break toward the largest split so that mega-components (multi-
+        # domain proteins can chain many families into one group) land in
+        # train instead of monopolizing a small evaluation split.
+        best = max(names, key=lambda n: (deficits[n], targets[n], rng.random()))
         assignment[group] = best
         filled[best] += size
 
