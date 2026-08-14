@@ -207,3 +207,39 @@ class RegionSearchResponse(BaseModel):
         "mean embeddings — a cross-granularity cosine comparison, not a "
         "domain-database search."
     )
+
+
+class TrajectoryRequest(BaseModel):
+    accession: str | None = None
+    sequence: str | None = Field(None, max_length=MAX_SEQUENCE_LENGTH * 2)
+    mutations: list[str] = Field(..., min_length=1, max_length=10,
+                                 examples=[["E7V", "V7A"]])
+    pooling: Pooling = "mean"
+
+    @model_validator(mode="after")
+    def exactly_one_target(self) -> TrajectoryRequest:
+        if bool(self.sequence) == bool(self.accession):
+            raise ValueError("Provide exactly one of 'sequence' or 'accession'.")
+        return self
+
+
+class TrajectoryStep(BaseModel):
+    step: int
+    mutation: str
+    cumulative: list[str]
+    step_displacement: float
+    displacement_from_wt: float
+    cosine_to_wt: float
+
+
+class TrajectoryResponse(BaseModel):
+    pooling: Pooling
+    n_steps: int
+    steps: list[TrajectoryStep]
+    path_length: float
+    net_displacement: float
+    directness: float
+    note: str = (
+        "Sequential representation-space movement of a frozen protein language "
+        "model; not an evolutionary path or fitness trajectory."
+    )

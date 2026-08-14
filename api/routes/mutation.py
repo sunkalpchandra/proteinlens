@@ -9,9 +9,12 @@ from api.schemas import (
     LandscapeResponse,
     MutationRequest,
     MutationResponse,
+    TrajectoryRequest,
+    TrajectoryResponse,
 )
 from api.state import AppState, get_state
 from ml.sequence import validate_sequence
+from models.mutation import TrajectoryAnalyzer
 
 router = APIRouter(tags=["mutation"])
 
@@ -48,3 +51,14 @@ def mutation_landscape(
     with state.encoder_lock:
         landscape = state.analyzer.landscape(seq, req.position, req.pooling)
     return LandscapeResponse(**landscape)
+
+
+@router.post("/trajectory", response_model=TrajectoryResponse)
+def trajectory(
+    req: TrajectoryRequest, state: AppState = Depends(get_state)
+) -> TrajectoryResponse:
+    seq = _resolve_sequence(state, req.accession, req.sequence)
+    analyzer = TrajectoryAnalyzer(state.pipeline)
+    with state.encoder_lock:
+        result = analyzer.trajectory(seq, req.mutations, req.pooling)
+    return TrajectoryResponse(**result)
