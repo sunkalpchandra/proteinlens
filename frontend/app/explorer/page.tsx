@@ -64,10 +64,15 @@ export default function ExplorerPage() {
 
   // --- URL → state (once, on mount) ----------------------------------------
   useEffect(() => {
-    const p = new URLSearchParams(window.location.search).get("p");
+    const params = new URLSearchParams(window.location.search);
+    const p = params.get("p");
     if (p) {
       setSelectedId(p);
       setFocusId(p);
+    }
+    const color = params.get("color");
+    if (color && COLOR_MODES.some((mode) => mode.id === color)) {
+      setColorMode(color as ColorMode);
     }
   }, []);
 
