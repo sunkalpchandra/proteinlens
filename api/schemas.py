@@ -86,6 +86,7 @@ class ProteinProfile(BaseModel):
     protein: ProteinSummary
     protein_name_full: str
     keywords: list[str]
+    pdb: list[str] = []
     sequence: str
     model: str
     stats: RepresentationStats

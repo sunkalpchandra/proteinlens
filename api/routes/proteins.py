@@ -71,6 +71,7 @@ def protein_profile(
         protein=ProteinSummary(**state.summary_dict(accession)),
         protein_name_full=row["protein_name_full"],
         keywords=[k.strip() for k in keywords.split(";") if k.strip()][:20],
+        pdb=state.pdb_for(accession)[:12],
         sequence=row["sequence"],
         model=state.store.meta["model"],
         stats=RepresentationStats(
