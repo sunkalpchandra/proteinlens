@@ -77,26 +77,31 @@ def build_map_payload(
     outliers = outlier_scores(knn_dist)
 
     meta = df.set_index("accession").loc[store.accessions].reset_index()
+    # Everything except x/y is projection-independent — build the base dicts
+    # once and let each preset override only its coordinates.
+    base_points = [
+        {
+            "id": row.accession,
+            "name": row.protein_name,
+            "gene": row.gene if isinstance(row.gene, str) else None,
+            "org": row.organism_short,
+            "len": int(row.length),
+            "family": row.family if isinstance(row.family, str) else None,
+            "pfam": row.pfam_primary if isinstance(row.pfam_primary, str) else None,
+            "ec": row.ec_class if isinstance(row.ec_class, str) else None,
+            "enzyme": bool(row.is_enzyme),
+            "loc": row.localization if isinstance(row.localization, str) else None,
+            "cluster": int(labels[i]),
+            "knn_dist": round(float(knn_dist[i]), 5),
+            "outlier": round(float(outliers[i]), 4),
+        }
+        for i, row in enumerate(meta.itertuples())
+    ]
     for preset, (coords, info) in coords_by_preset.items():
-        points = []
-        for i, row in enumerate(meta.itertuples()):
-            points.append({
-                "id": row.accession,
-                "name": row.protein_name,
-                "gene": row.gene if isinstance(row.gene, str) else None,
-                "org": row.organism_short,
-                "len": int(row.length),
-                "family": row.family if isinstance(row.family, str) else None,
-                "pfam": row.pfam_primary if isinstance(row.pfam_primary, str) else None,
-                "ec": row.ec_class if isinstance(row.ec_class, str) else None,
-                "enzyme": bool(row.is_enzyme),
-                "loc": row.localization if isinstance(row.localization, str) else None,
-                "x": round(float(coords[i, 0]), 4),
-                "y": round(float(coords[i, 1]), 4),
-                "cluster": int(labels[i]),
-                "knn_dist": round(float(knn_dist[i]), 5),
-                "outlier": round(float(outliers[i]), 4),
-            })
+        points = [
+            {**p, "x": round(float(coords[i, 0]), 4), "y": round(float(coords[i, 1]), 4)}
+            for i, p in enumerate(base_points)
+        ]
         payload = {
             "pooling": pooling,
             "preset": preset,
