@@ -5,7 +5,9 @@ interchangeable backends sit behind one interface:
 
   flat   IndexFlatIP — exact; the default up to ~50k vectors
   hnsw   IndexHNSWFlat — graph ANN; sub-millisecond queries past 100k vectors
-  ivf    IndexIVFFlat — clustered ANN; smallest memory of the three
+  ivf    IndexIVFFlat — clustered ANN; full vectors, cluster-pruned search
+  ivfpq  IndexIVFPQ — product-quantized; ~10-50x smaller memory for the
+         million-vector regime, at a recall cost the benchmark quantifies
 
 ``auto_backend`` picks by corpus size; ``scripts/benchmark_ann.py`` measures
 the recall/QPS trade-off that justifies the thresholds.
@@ -22,7 +24,7 @@ import numpy as np
 
 from ml.embeddings import l2_normalize
 
-BACKENDS = ("flat", "hnsw", "ivf")
+BACKENDS = ("flat", "hnsw", "ivf", "ivfpq")
 
 # Exact search stays affordable well past this corpus's size; the graph index
 # earns its build cost once brute force stops being interactive.
@@ -83,16 +85,26 @@ class ProteinIndex:
             index = faiss.IndexHNSWFlat(dim, hnsw_m, faiss.METRIC_INNER_PRODUCT)
             index.hnsw.efConstruction = ef_construction
             index.hnsw.efSearch = ef_search
-        else:  # ivf
+        elif backend == "ivf":
             nlist = nlist or max(16, int(np.sqrt(len(accessions))) * 4)
             quantizer = faiss.IndexFlatIP(dim)
             index = faiss.IndexIVFFlat(quantizer, dim, nlist, faiss.METRIC_INNER_PRODUCT)
             index.train(normalized)
             index.nprobe = nprobe
+        else:  # ivfpq
+            nlist = nlist or max(16, int(np.sqrt(len(accessions))) * 4)
+            # m sub-quantizers of 8 bits: dim must divide by m; pick the
+            # largest m ≤ 64 that divides the dimensionality.
+            m = next(m for m in (64, 48, 32, 24, 16, 8, 4, 2, 1) if dim % m == 0)
+            quantizer = faiss.IndexFlatIP(dim)
+            index = faiss.IndexIVFPQ(quantizer, dim, nlist, m, 8,
+                                     faiss.METRIC_INNER_PRODUCT)
+            index.train(normalized)
+            index.nprobe = nprobe
 
         index.add(normalized)
-        if backend == "ivf":
-            # reconstruct() needs a direct map on IVF (neighbors_of, kNN stats).
+        if backend in ("ivf", "ivfpq"):
+            # reconstruct() needs a direct map on IVF-family indexes.
             index.make_direct_map()
         return cls(index, list(accessions), pooling, backend)
 
@@ -119,7 +131,7 @@ class ProteinIndex:
         backend = "flat"
         if meta_path.exists():
             backend = json.loads(meta_path.read_text()).get("backend", "flat")
-        if backend == "ivf":
+        if backend in ("ivf", "ivfpq"):
             index.make_direct_map()  # not persisted by write_index
         return cls(index, accessions, pooling, backend)
 
