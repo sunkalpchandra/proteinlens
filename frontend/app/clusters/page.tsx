@@ -32,19 +32,34 @@ function TopChips({ counts }: { counts: Record<string, number> }) {
   );
 }
 
+type Algorithm = "kmeans" | "hdbscan";
+
 export default function ClustersPage() {
+  const [algorithm, setAlgorithm] = useState<Algorithm>("kmeans");
+  const [hdbscanAvailable, setHdbscanAvailable] = useState(true);
   const [payload, setPayload] = useState<ClustersPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let stale = false;
-    getClusters("mean")
+    setPayload(null);
+    setError(null);
+    getClusters("mean", algorithm)
       .then((p) => !stale && setPayload(p))
-      .catch((e: unknown) => !stale && setError(errorText(e)));
+      .catch((e: unknown) => {
+        if (stale) return;
+        if (algorithm === "hdbscan") {
+          // View not built for this deployment — fall back quietly.
+          setHdbscanAvailable(false);
+          setAlgorithm("kmeans");
+        } else {
+          setError(errorText(e));
+        }
+      });
     return () => {
       stale = true;
     };
-  }, []);
+  }, [algorithm]);
 
   if (error) {
     return (
@@ -66,11 +81,29 @@ export default function ClustersPage() {
     <div className="mx-auto max-w-5xl px-4 py-8">
       <div className="flex flex-wrap items-baseline justify-between gap-2 pb-4">
         <h1 className="text-lg font-semibold text-ink">Representation clusters</h1>
-        <span className="font-mono text-[11px] text-ink3">
-          k-means k={payload.clustering.n_clusters ?? payload.clusters.length} · silhouette{" "}
-          {payload.clustering.silhouette_cosine?.toFixed(3) ?? "—"} · mean pooling ·{" "}
+        <span className="flex items-center gap-3 font-mono text-[11px] text-ink3">
+          <span className="flex overflow-hidden rounded border border-bd">
+            {(["kmeans", "hdbscan"] as const).map((a) => (
+              <button
+                key={a}
+                type="button"
+                disabled={a === "hdbscan" && !hdbscanAvailable}
+                onClick={() => setAlgorithm(a)}
+                className={`px-2 py-0.5 disabled:opacity-40 ${
+                  algorithm === a ? "bg-surface2 text-ink" : "text-ink3 hover:text-ink2"
+                }`}
+              >
+                {a}
+              </button>
+            ))}
+          </span>
+          <span>
+            {algorithm === "kmeans"
+              ? `k=${payload.clustering.n_clusters ?? payload.clusters.length} · silhouette ${payload.clustering.silhouette_cosine?.toFixed(3) ?? "—"}`
+              : `${payload.clustering.n_clusters ?? "—"} clusters · noise labeled −1`}
+          </span>
           <Link href="/explorer?color=cluster" className="text-accent hover:underline">
-            view on map →
+            map →
           </Link>
         </span>
       </div>
@@ -78,7 +111,9 @@ export default function ClustersPage() {
       <div className="panel divide-y divide-bd">
         {payload.clusters.map((c: ClusterSummary) => (
           <div key={c.cluster} className="grid grid-cols-[44px_1fr] gap-3 px-3 py-2.5 sm:grid-cols-[44px_130px_1fr_1fr]">
-            <span className="font-mono text-[13px] text-ink tabular">{c.cluster}</span>
+            <span className="font-mono text-[13px] text-ink tabular">
+              {c.cluster === -1 ? "noise" : c.cluster}
+            </span>
             <span className="flex flex-col gap-1">
               <span className="font-mono text-[11px] text-ink2 tabular">
                 {c.size.toLocaleString()} proteins

@@ -296,9 +296,13 @@ export async function trajectoryOf(
   });
 }
 
-export async function getClusters(pooling: Pooling = "mean"): Promise<ClustersPayload> {
-  if (!isLive) return demoFile<ClustersPayload>(`clusters_${pooling}.json`);
-  return request<ClustersPayload>(`/clusters?pooling=${pooling}`);
+export async function getClusters(
+  pooling: Pooling = "mean",
+  algorithm: "kmeans" | "hdbscan" = "kmeans",
+): Promise<ClustersPayload> {
+  const suffix = algorithm === "kmeans" ? "" : "_hdbscan";
+  if (!isLive) return demoFile<ClustersPayload>(`clusters_${pooling}${suffix}.json`);
+  return request<ClustersPayload>(`/clusters?pooling=${pooling}&algorithm=${algorithm}`);
 }
 
 export async function compareProteins(a: string, b: string): Promise<ComparePayload> {
