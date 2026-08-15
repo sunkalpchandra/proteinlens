@@ -63,3 +63,23 @@ class TestScorerModel:
         # less likely than wild-type.
         negative = sum(1 for aa, s in scores.items() if aa != "H" and s < 0)
         assert negative >= 15
+
+
+class TestConservationProfile:
+    def test_uniform_distribution_has_max_entropy(self):
+        from models.scoring import conservation_profile
+
+        uniform = torch.full((2, 20), math.log(1 / 20))
+        profile = conservation_profile(uniform, "MK")
+        assert profile["entropy"][0] == pytest.approx(math.log(20), abs=1e-3)
+        assert profile["wt_logprob"][0] == pytest.approx(math.log(1 / 20), abs=1e-3)
+
+    def test_peaked_distribution_has_low_entropy(self):
+        from models.scoring import conservation_profile
+
+        logits = torch.full((1, 20), -20.0)
+        logits[0, CANONICAL_AA.index("M")] = 0.0
+        table = torch.log_softmax(logits, dim=-1)
+        profile = conservation_profile(table, "M")
+        assert profile["entropy"][0] < 0.01
+        assert profile["wt_logprob"][0] > -0.01
