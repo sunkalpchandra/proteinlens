@@ -6,6 +6,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
+from models.mutation import MAX_TRAJECTORY_STEPS
+
 Pooling = Literal["mean", "max", "bos", "attention"]
 
 MAX_SEQUENCE_LENGTH = 2048
@@ -212,7 +214,7 @@ class RegionSearchResponse(BaseModel):
 class TrajectoryRequest(BaseModel):
     accession: str | None = None
     sequence: str | None = Field(None, max_length=MAX_SEQUENCE_LENGTH * 2)
-    mutations: list[str] = Field(..., min_length=1, max_length=10,
+    mutations: list[str] = Field(..., min_length=1, max_length=MAX_TRAJECTORY_STEPS,
                                  examples=[["E7V", "V7A"]])
     pooling: Pooling = "mean"
 
