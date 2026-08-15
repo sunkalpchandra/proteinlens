@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse, Response
 
 from api.schemas import HealthResponse, StatsResponse
 from api.state import AppState, get_state
+from ml.projection import MAP_PRESETS, map_filename
 
 router = APIRouter(tags=["corpus"])
 
@@ -28,20 +29,22 @@ def health(state: AppState = Depends(get_state)) -> HealthResponse:
     )
 
 
-MAP_PRESET_NAMES = ("default", "local", "global")
-
-
 @router.get("/map")
 def embedding_map(
     pooling: str = Query("mean"),
     preset: str = Query("default"),
     state: AppState = Depends(get_state),
 ) -> Response:
-    if preset not in MAP_PRESET_NAMES:
-        raise HTTPException(422, f"Unknown preset '{preset}'. Options: {MAP_PRESET_NAMES}")
-    suffix = "" if preset == "default" else f"_{preset}"
-    path = state.index_dir / f"map_{pooling}{suffix}.json"
+    if preset not in MAP_PRESETS:
+        raise HTTPException(422, f"Unknown preset '{preset}'. Options: {sorted(MAP_PRESETS)}")
+    path = state.index_dir / map_filename(pooling, preset)
     if not path.exists():
+        if preset != "default" and pooling != "mean":
+            raise HTTPException(
+                404,
+                f"Alternative presets are built only for mean pooling; "
+                f"'{pooling}' serves preset 'default' only.",
+            )
         raise HTTPException(
             404,
             f"No map payload for pooling '{pooling}' preset '{preset}'. Run scripts/build_index.py.",
