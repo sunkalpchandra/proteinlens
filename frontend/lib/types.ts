@@ -226,3 +226,12 @@ export interface FetchProteinPayload {
   hits: SearchHit[];
   note: string;
 }
+
+export interface ConservationPayload {
+  accession: string;
+  length: number;
+  entropy: number[];
+  wt_logprob: number[];
+  max_entropy: number;
+  note: string;
+}

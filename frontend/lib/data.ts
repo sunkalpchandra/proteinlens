@@ -13,6 +13,7 @@ import type {
   AttentionPayload,
   BenchmarkPayload,
   ClustersPayload,
+  ConservationPayload,
   ComparePayload,
   DomainsPayload,
   FetchProteinPayload,
@@ -333,4 +334,25 @@ export async function fetchProtein(accession: string): Promise<FetchProteinPaylo
     method: "POST",
     body: JSON.stringify({ accession }),
   });
+}
+
+export async function getConservation(accession: string): Promise<ConservationPayload> {
+  if (!isLive) {
+    // Demo bundles inline conservation for showcase proteins.
+    const profile = (await getProfile(accession)) as ProteinProfile & {
+      conservation?: Omit<ConservationPayload, "accession" | "length" | "note">;
+    };
+    if (!profile.conservation) {
+      throw new ApiError(404, "No precomputed conservation for this demo protein.");
+    }
+    return {
+      accession,
+      length: profile.sequence.length,
+      ...profile.conservation,
+      note: "Model-dependent signal from the frozen masked-LM distribution, not an alignment-based conservation score.",
+    };
+  }
+  return request<ConservationPayload>(
+    `/protein/${encodeURIComponent(accession)}/conservation`,
+  );
 }
