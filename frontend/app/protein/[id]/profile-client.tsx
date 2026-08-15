@@ -13,10 +13,11 @@ import { ResidueTrack } from "@/components/residue-track";
 import { SequenceActions } from "@/components/sequence-actions";
 import { SequenceViewer } from "@/components/sequence-viewer";
 import { StatGrid, type StatItem } from "@/components/stat-grid";
-import { ApiError, getAttention, getDomains, getProfile, isLive, regionSearch } from "@/lib/data";
+import { ApiError, getAttention, getConservation, getDomains, getProfile, isLive, regionSearch } from "@/lib/data";
 import { AA_CATEGORY, aaColor } from "@/lib/palette";
 import type {
   AttentionPayload,
+  ConservationPayload,
   DomainsPayload,
   Pooling,
   ProteinProfile,
@@ -143,6 +144,9 @@ export function ProteinPageClient() {
   const [attState, setAttState] = useState<AttentionState>("loading");
   const [attError, setAttError] = useState<string | null>(null);
 
+  const [conservation, setConservation] = useState<ConservationPayload | null>(null);
+  const [consState, setConsState] = useState<AttentionState>("loading");
+
   const [domains, setDomains] = useState<DomainsPayload | null>(null);
   const [domState, setDomState] = useState<DomainsState>("loading");
   const [domError, setDomError] = useState<string | null>(null);
@@ -210,6 +214,28 @@ export function ProteinPageClient() {
           setAttState("error");
           setAttError(errorText(e));
         }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [accession]);
+
+  // Conservation loads lazily like attention (live: one LM forward; demo:
+  // precomputed for showcase proteins).
+  useEffect(() => {
+    if (!accession) return;
+    let cancelled = false;
+    setConservation(null);
+    setConsState("loading");
+    getConservation(accession)
+      .then((c) => {
+        if (cancelled) return;
+        setConservation(c);
+        setConsState("ok");
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        setConsState(e instanceof ApiError && e.status === 404 ? "missing" : "error");
       });
     return () => {
       cancelled = true;
@@ -463,6 +489,34 @@ export function ProteinPageClient() {
       </Section>
 
       {/* Attention ------------------------------------------------------------ */}
+      <Section title="model conservation">
+        {consState === "loading" && (
+          <p className="loading-pulse font-mono text-[11px] text-ink3">
+            loading masked-LM distribution…
+          </p>
+        )}
+        {consState === "missing" && (
+          <p className="text-[13px] text-ink3">
+            No precomputed conservation for this demo protein.
+          </p>
+        )}
+        {consState === "error" && (
+          <p className="text-[13px] text-ink3">Conservation signal unavailable.</p>
+        )}
+        {consState === "ok" && conservation && (
+          <div>
+            <ResidueTrack
+              values={conservation.entropy.map((e) => conservation.max_entropy - e)}
+              marked={selected}
+              label="model conservation (max entropy − entropy, nats)"
+              color="#199e70"
+              onClickPos={toggleSelect}
+            />
+            <p className="mt-1 text-xs text-ink3">{conservation.note}</p>
+          </div>
+        )}
+      </Section>
+
       <Section title="attention">
         {attState === "loading" && (
           <p className="loading-pulse font-mono text-[11px] text-ink3">loading attention weights…</p>
