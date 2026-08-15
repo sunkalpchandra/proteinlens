@@ -91,9 +91,6 @@ def main() -> int:
     return 0
 
 
-if __name__ == "__main__":
-    sys.exit(main())
-
 
 def fig_dms(path: Path = Path("reports/dms_validation.csv")) -> None:
     """Figure 11: measured variant effect vs model statistics."""
@@ -125,3 +122,6 @@ def fig_dms(path: Path = Path("reports/dms_validation.csv")) -> None:
         y=1.02,
     )
     save(fig, "11_dms_validation")
+
+if __name__ == "__main__":
+    sys.exit(main())
