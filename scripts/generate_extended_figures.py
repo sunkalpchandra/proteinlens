@@ -93,7 +93,7 @@ def main() -> int:
 
 
 
-def fig_dms(path: Path = Path("reports/dms_validation.csv")) -> None:
+def fig_dms(path: Path = Path("reports/dms_validation_P0DP23.csv")) -> None:
     """Figure 11: measured variant effect vs model statistics."""
     if not path.exists():
         print("  skipping DMS figure (no reports/dms_validation.csv)")
