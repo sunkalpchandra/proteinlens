@@ -59,18 +59,28 @@ def build_block(bench: pd.DataFrame) -> str:
     return "\n".join(lines)
 
 
+def replace_block(text: str, begin: str, end: str, body: str) -> str:
+    """Swap the content between two markers (markers included in the result)."""
+    block = f"{begin}\n{body}\n{end}"
+    return re.sub(re.escape(begin) + r".*?" + re.escape(end), block, text, flags=re.S)
+
+
 def main() -> int:
-    bench = pd.read_csv("reports/benchmark.csv")
     readme = Path("README.md")
     text = readme.read_text()
     if BEGIN not in text or END not in text:
         print("RESULTS markers not found in README.md", file=sys.stderr)
         return 1
-    block = f"{BEGIN}\n{build_block(bench)}\n{END}"
-    text = re.sub(re.escape(BEGIN) + r".*?" + re.escape(END), block, text, flags=re.S)
-    readme.write_text(text)
+
+    text = replace_block(text, BEGIN, END, build_block(pd.read_csv("reports/benchmark.csv")))
     print("README results block updated.")
-    update_extended()
+
+    extended = Path("reports/extended_benchmark.csv")
+    if EXT_BEGIN in text and extended.exists():
+        text = replace_block(text, EXT_BEGIN, EXT_END, build_extended_block(pd.read_csv(extended)))
+        print("README extended block updated.")
+
+    readme.write_text(text)
     return 0
 
 
@@ -96,18 +106,6 @@ def build_extended_block(table: pd.DataFrame) -> str:
     return "\n".join(lines)
 
 
-def update_extended() -> None:
-    path = Path("reports/extended_benchmark.csv")
-    readme = Path("README.md")
-    text = readme.read_text()
-    if EXT_BEGIN not in text:
-        return
-    if not path.exists():
-        return
-    block = f"{EXT_BEGIN}\n{build_extended_block(pd.read_csv(path))}\n{EXT_END}"
-    text = re.sub(re.escape(EXT_BEGIN) + r".*?" + re.escape(EXT_END), block, text, flags=re.S)
-    readme.write_text(text)
-    print("README extended block updated.")
 
 if __name__ == "__main__":
     sys.exit(main())
