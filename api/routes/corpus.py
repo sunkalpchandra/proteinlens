@@ -93,20 +93,35 @@ def benchmark(state: AppState = Depends(get_state)) -> JSONResponse:
 @router.get("/stats", response_model=StatsResponse)
 def stats(state: AppState = Depends(get_state)) -> StatsResponse:
     """Operational snapshot: corpus composition, cache size, artifact vintage."""
+    # Count cache entries without leaking connections: reuse the pipeline's
+    # open handle when the encoder is loaded, else one short-lived connection.
     cache_path = state.embeddings_dir / "adhoc_cache.sqlite"
     cache_entries = 0
-    if cache_path.exists():
-        from ml.embeddings import SqliteVectorCache
+    if state.encoder_loaded and state.pipeline.cache is not None:
+        cache_entries = len(state.pipeline.cache)
+    elif cache_path.exists():
+        import sqlite3
 
-        cache_entries = len(SqliteVectorCache(cache_path))
+        with sqlite3.connect(cache_path) as conn:
+            try:
+                (cache_entries,) = conn.execute("SELECT COUNT(*) FROM vectors").fetchone()
+            except sqlite3.OperationalError:
+                cache_entries = 0  # cache file exists but table not created yet
+
+    # Backend name from the sidecar written at build time — reporting it must
+    # not force the FAISS index into memory on a cold deployment.
+    backend = "flat"
+    backend_meta = state.index_dir / "index_mean_meta.json"
+    if backend_meta.exists():
+        backend = json.loads(backend_meta.read_text()).get("backend", "flat")
 
     return StatsResponse(
         corpus_size=len(state.df),
         n_families=int(state.df["family"].nunique()),
         n_with_domains=state.n_proteins_with_domains(),
         poolings=state.store.poolings,
-        index_backend=state.index("mean").backend,
-        adhoc_cache_entries=cache_entries,
+        index_backend=backend,
+        adhoc_cache_entries=int(cache_entries),
         encoder_loaded=state.encoder_loaded,
         embeddings_created_at=state.store.meta.get("created_at"),
         appended_proteins=state.store.meta.get("appended", []),
