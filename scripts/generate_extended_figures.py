@@ -87,6 +87,7 @@ def main() -> int:
     fig_scaling(table)
     fig_comparison(table)
     fig_dms()
+    fig_dms_summary()
     print("Done.")
     return 0
 
@@ -122,6 +123,41 @@ def fig_dms(path: Path = Path("reports/dms_validation.csv")) -> None:
         y=1.02,
     )
     save(fig, "11_dms_validation")
+
+
+def fig_dms_summary() -> None:
+    """Figure 12: Spearman per assay per model statistic."""
+    from scipy.stats import spearmanr
+
+    reports = Path("reports")
+    rows = []
+    for csv_path in sorted(reports.glob("dms_validation_*.csv")):
+        frame = pd.read_csv(csv_path)
+        if "displacement" not in frame:
+            continue
+        rows.append({
+            "accession": csv_path.stem.replace("dms_validation_", ""),
+            "LLR": spearmanr(frame["llr"], frame["score"]).statistic,
+            "−‖Δz‖": spearmanr(-frame["displacement"], frame["score"]).statistic,
+        })
+    if len(rows) < 2:
+        print("  skipping DMS summary figure (<2 assays)")
+        return
+    table = pd.DataFrame(rows)
+    x = np.arange(len(table))
+    width = 0.36
+    fig, ax = plt.subplots(figsize=(5.8, 3.4))
+    for i, (col, color) in enumerate([("LLR", SERIES[0]), ("−‖Δz‖", SERIES[2])]):
+        bars = ax.bar(x + (i - 0.5) * width, table[col], width * 0.92,
+                      color=color, label=col)
+        ax.bar_label(bars, fmt="%+.3f", fontsize=7, color=INK2, padding=2)
+    ax.set_xticks(x, table["accession"])
+    ax.set_ylabel("Spearman ρ vs assay score")
+    ax.set_ylim(0, max(0.45, float(table[["LLR", "−‖Δz‖"]].max().max()) * 1.3))
+    ax.grid(True, axis="y", alpha=0.6)
+    ax.legend(ncols=2, loc="upper left", fontsize=8)
+    ax.set_title("Model statistics vs measured variant effects (four MaveDB assays)")
+    save(fig, "12_dms_summary")
 
 if __name__ == "__main__":
     sys.exit(main())
