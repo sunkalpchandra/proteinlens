@@ -28,7 +28,12 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from ml.clustering import cluster_summaries, kmeans_clusters, outlier_scores  # noqa: E402
+from ml.clustering import (  # noqa: E402
+    cluster_summaries,
+    hdbscan_clusters,
+    kmeans_clusters,
+    outlier_scores,
+)
 from ml.embeddings import EmbeddingStore  # noqa: E402
 from ml.projection import MAP_PRESETS, ProjectionCache, ProjectionParams, map_filename  # noqa: E402
 from ml.retrieval import ProteinIndex  # noqa: E402
@@ -48,6 +53,7 @@ def build_map_payload(
     n_clusters: int,
     seed: int,
     presets: list[str] | None = None,
+    with_hdbscan: bool = False,
 ) -> dict:
     embeddings = np.asarray(store.matrix(pooling))
     # Fingerprint the actual matrix bytes: re-embedding the same corpus with a
@@ -116,6 +122,18 @@ def build_map_payload(
     (out_dir / f"clusters_{pooling}.json").write_text(
         json.dumps({"pooling": pooling, "clustering": cluster_info, "clusters": summaries})
     )
+
+    if with_hdbscan:
+        # Density-based alternative view: map points keep k-means ids; the
+        # cluster browser offers this as a second lens (noise stays -1).
+        h_labels, h_info = hdbscan_clusters(embeddings)
+        h_summaries = cluster_summaries(meta, h_labels)
+        (out_dir / f"clusters_{pooling}_hdbscan.json").write_text(
+            json.dumps({"pooling": pooling, "clustering": h_info, "clusters": h_summaries})
+        )
+        print(f"  hdbscan ({pooling}): {h_info['n_clusters']} clusters, "
+              f"{h_info['noise_fraction']:.1%} noise")
+
     return {"presets": list(coords_by_preset), **cluster_info}
 
 
@@ -128,6 +146,8 @@ def main() -> int:
     parser.add_argument("--presets", nargs="+", default=list(MAP_PRESETS),
                         choices=list(MAP_PRESETS))
     parser.add_argument("--n-clusters", type=int, default=25)
+    parser.add_argument("--no-hdbscan", action="store_true",
+                        help="skip the density-based alternative cluster view")
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
 
@@ -152,7 +172,8 @@ def main() -> int:
         if "default" not in presets:
             presets = ["default", *presets]
         metrics[pooling] = build_map_payload(
-            df, store, pooling, args.out, args.n_clusters, args.seed, presets
+            df, store, pooling, args.out, args.n_clusters, args.seed, presets,
+            with_hdbscan=(pooling == "mean" and not args.no_hdbscan),
         )
 
     log_experiment(
