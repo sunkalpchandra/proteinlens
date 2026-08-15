@@ -7,8 +7,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DownloadJson } from "@/components/download-json";
 import { HitTable } from "@/components/hit-table";
-import { ApiError, findProteins, isLive, searchBySequence } from "@/lib/data";
-import type { Pooling, ProteinSummary, SearchHit } from "@/lib/types";
+import { ApiError, errorMessage, fetchProtein, findProteins, isLive, searchBySequence } from "@/lib/data";
+import type { FetchProteinPayload, Pooling, ProteinSummary, SearchHit } from "@/lib/types";
 
 const VALID_AA = new Set("ACDEFGHIKLMNPQRSTVWY".split(""));
 const MIN_LEN = 10;
@@ -62,11 +62,29 @@ function SearchWorkbench() {
   const [metaResults, setMetaResults] = useState<ProteinSummary[] | null>(null);
   const [metaLoading, setMetaLoading] = useState(false);
   const [metaError, setMetaError] = useState<string | null>(null);
+  const [fetched, setFetched] = useState<FetchProteinPayload | null>(null);
+  const [fetchLoading, setFetchLoading] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
+  const runFetch = useCallback(async (accession: string) => {
+    setFetchLoading(true);
+    setFetchError(null);
+    setFetched(null);
+    try {
+      setFetched(await fetchProtein(accession));
+    } catch (e) {
+      setFetchError(errorMessage(e));
+    } finally {
+      setFetchLoading(false);
+    }
+  }, []);
 
   const runMetaSearch = useCallback(
     async (q: string) => {
       const query = q.trim();
       if (!query) return;
+      setFetched(null);
+      setFetchError(null);
       // Shareable searches: the query lives in the URL.
       router.replace(`/search?q=${encodeURIComponent(query)}`, { scroll: false });
       setMetaLoading(true);
@@ -229,10 +247,51 @@ function SearchWorkbench() {
                 Matches names, genes, families, and accessions in the corpus.
               </QuietNotice>
             ) : metaResults.length === 0 ? (
-              <QuietNotice>No matches</QuietNotice>
+              <div className="space-y-3">
+                <QuietNotice>No matches in the corpus</QuietNotice>
+                {isLive &&
+                  /^[A-Za-z][A-Za-z0-9]{5,9}$/.test(metaQuery.trim()) &&
+                  !fetched && (
+                    <button
+                      type="button"
+                      disabled={fetchLoading}
+                      onClick={() => void runFetch(metaQuery.trim().toUpperCase())}
+                      className="rounded border border-bds bg-surface2 px-3 py-1.5 font-mono text-[12px] text-ink hover:border-accent disabled:opacity-40"
+                    >
+                      {fetchLoading
+                        ? "fetching + embedding…"
+                        : `fetch ${metaQuery.trim().toUpperCase()} from UniProt`}
+                    </button>
+                  )}
+                {fetchError && <ErrorPanel message={fetchError} />}
+              </div>
             ) : (
               <div className="panel px-1 py-1">
                 <HitTable hits={summariesToHits(metaResults)} showSimilarity={false} />
+              </div>
+            )}
+
+            {fetched && (
+              <div className="mt-4 space-y-3">
+                <div className="panel flex flex-wrap items-baseline gap-x-3 gap-y-1 px-3 py-2">
+                  <span className="rounded border border-bds px-1.5 py-0.5 font-mono text-[10px] uppercase text-ink3">
+                    {fetched.source === "uniprot" ? "external · UniProt" : "in corpus"}
+                  </span>
+                  <span className="font-mono text-[12px] text-accent">
+                    {fetched.protein.accession}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-[13px] text-ink">
+                    {fetched.protein.name}
+                  </span>
+                  <span className="font-mono text-[11px] text-ink3">
+                    {fetched.protein.organism} · {fetched.protein.length} aa
+                  </span>
+                </div>
+                <p className="label-mono">nearest corpus proteins</p>
+                <div className="panel px-1 py-1">
+                  <HitTable hits={fetched.hits} showSimilarity />
+                </div>
+                <p className="max-w-2xl text-[11px] text-ink3">{fetched.note}</p>
               </div>
             )}
           </div>
