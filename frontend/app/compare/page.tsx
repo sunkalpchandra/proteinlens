@@ -8,92 +8,24 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
+import { ProteinFinder } from "@/components/protein-finder";
 import { compareProteins, errorMessage, findProteins, isLive, LIVE_NOTICE } from "@/lib/data";
 import { blueRamp } from "@/lib/palette";
 import type { ComparePayload, ProteinSummary } from "@/lib/types";
 
-function Finder({
-  label,
-  value,
-  onPick,
-}: {
-  label: string;
-  value: ProteinSummary | null;
-  onPick: (p: ProteinSummary | null) => void;
-}) {
-  const [query, setQuery] = useState("");
-  const [hits, setHits] = useState<ProteinSummary[]>([]);
-  const [open, setOpen] = useState(false);
-  const seq = useRef(0);
 
-  useEffect(() => {
-    const q = query.trim();
-    if (q.length < 2) {
-      setHits([]);
-      return;
-    }
-    const mine = ++seq.current;
-    const timer = setTimeout(() => {
-      findProteins(q, 8)
-        .then((results) => {
-          if (seq.current === mine) {
-            setHits(results);
-            setOpen(true);
-          }
-        })
-        .catch(() => undefined);
-    }, 150);
-    return () => clearTimeout(timer);
-  }, [query]);
-
+function PickedRow({ p, onClear }: { p: ProteinSummary; onClear: () => void }) {
   return (
-    <div className="relative">
-      <span className="label-mono block pb-1">{label}</span>
-      {value ? (
-        <div className="flex items-center gap-2">
-          <span className="font-mono text-[12px] text-accent">{value.accession}</span>
-          <span className="min-w-0 flex-1 truncate text-[13px] text-ink">{value.name}</span>
-          <button
-            type="button"
-            className="font-mono text-[11px] text-ink3 hover:text-ink"
-            onClick={() => {
-              setQuery("");
-              onPick(null);
-            }}
-          >
-            change
-          </button>
-        </div>
-      ) : (
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => hits.length && setOpen(true)}
-          onBlur={() => setTimeout(() => setOpen(false), 150)}
-          placeholder="name, gene, or accession…"
-          className="w-full rounded border border-bd bg-surface2 px-2 py-1.5 text-[13px] text-ink placeholder:text-ink3 focus:border-bds focus:outline-none"
-        />
-      )}
-      {open && hits.length > 0 && !value && (
-        <div className="absolute z-20 mt-1 w-full overflow-hidden rounded border border-bds bg-surface2 shadow-xl">
-          {hits.map((h) => (
-            <button
-              key={h.accession}
-              type="button"
-              className="flex w-full items-baseline gap-2 px-2.5 py-1.5 text-left hover:bg-surface"
-              onMouseDown={() => {
-                onPick(h);
-                setOpen(false);
-                setQuery("");
-              }}
-            >
-              <span className="font-mono text-[11px] text-accent">{h.accession}</span>
-              <span className="min-w-0 flex-1 truncate text-[12.5px] text-ink">{h.name}</span>
-              <span className="shrink-0 text-[11px] text-ink3">{h.organism}</span>
-            </button>
-          ))}
-        </div>
-      )}
+    <div className="flex items-center gap-2">
+      <span className="font-mono text-[12px] text-accent">{p.accession}</span>
+      <span className="min-w-0 flex-1 truncate text-[13px] text-ink">{p.name}</span>
+      <button
+        type="button"
+        className="font-mono text-[11px] text-ink3 hover:text-ink"
+        onClick={onClear}
+      >
+        change
+      </button>
     </div>
   );
 }
@@ -193,8 +125,22 @@ function CompareWorkbench() {
       </p>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Finder label="protein A" value={a} onPick={setA} />
-        <Finder label="protein B" value={b} onPick={setB} />
+        <div>
+          <span className="label-mono block pb-1">protein A</span>
+          {a ? (
+            <PickedRow p={a} onClear={() => setA(null)} />
+          ) : (
+            <ProteinFinder onPick={setA} reflectPick={false} className="" />
+          )}
+        </div>
+        <div>
+          <span className="label-mono block pb-1">protein B</span>
+          {b ? (
+            <PickedRow p={b} onClear={() => setB(null)} />
+          ) : (
+            <ProteinFinder onPick={setB} reflectPick={false} className="" />
+          )}
+        </div>
       </div>
 
       {loading && (

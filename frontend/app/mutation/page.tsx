@@ -15,6 +15,7 @@ import {
 } from "@/components/mutation-heatmap";
 import { ResidueTrack } from "@/components/residue-track";
 import { SequenceViewer } from "@/components/sequence-viewer";
+import { ProteinFinder } from "@/components/protein-finder";
 import { TrajectoryPanel } from "@/components/trajectory-panel";
 import {
   analyzeMutation,
@@ -47,91 +48,6 @@ function errMessage(err: unknown): string {
 
 // ---------------------------------------------------------------------------
 
-function ProteinFinder({ onPick }: { onPick: (accession: string) => void }) {
-  const [q, setQ] = useState("");
-  const [hits, setHits] = useState<ProteinSummary[]>([]);
-  const [open, setOpen] = useState(false);
-  const [searching, setSearching] = useState(false);
-
-  useEffect(() => {
-    const needle = q.trim();
-    if (!needle) {
-      setHits([]);
-      setOpen(false);
-      setSearching(false);
-      return;
-    }
-    let cancelled = false;
-    setSearching(true);
-    const timer = setTimeout(async () => {
-      try {
-        const res = await findProteins(needle, 12);
-        if (!cancelled) {
-          setHits(res);
-          setOpen(true);
-        }
-      } catch {
-        if (!cancelled) setHits([]);
-      } finally {
-        if (!cancelled) setSearching(false);
-      }
-    }, 250);
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [q]);
-
-  const choose = (p: ProteinSummary) => {
-    setQ(`${p.accession} · ${p.name}`);
-    setOpen(false);
-    onPick(p.accession);
-  };
-
-  return (
-    <div className="relative max-w-xl">
-      <input
-        type="text"
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        onFocus={() => hits.length > 0 && setOpen(true)}
-        onBlur={() => setTimeout(() => setOpen(false), 150)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && hits.length > 0) choose(hits[0]);
-          if (e.key === "Escape") setOpen(false);
-        }}
-        placeholder="find a protein — name, gene, or accession"
-        spellCheck={false}
-        className="w-full rounded border border-bd bg-surface2 px-3 py-1.5 font-mono text-[12px] text-ink outline-none placeholder:text-ink3 focus:border-bds"
-      />
-      {searching && (
-        <span className="loading-pulse absolute right-3 top-1/2 -translate-y-1/2 font-mono text-[10px] text-ink3">
-          searching…
-        </span>
-      )}
-      {open && hits.length > 0 && (
-        <div className="scroll-thin absolute z-20 mt-1 max-h-72 w-full overflow-y-auto rounded border border-bds bg-surface2 shadow-xl">
-          {hits.map((p) => (
-            <button
-              key={p.accession}
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => choose(p)}
-              className="flex w-full items-baseline gap-2 px-3 py-1.5 text-left hover:bg-surface"
-            >
-              <span className="font-mono text-[11px] text-accent">{p.accession}</span>
-              <span className="truncate text-[12px] text-ink">{p.name}</span>
-              <span className="ml-auto shrink-0 font-mono text-[10px] text-ink3">
-                {p.gene ? `${p.gene} · ` : ""}
-                {p.organism} · {p.length} aa
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ---------------------------------------------------------------------------
 
@@ -382,7 +298,7 @@ function MutationWorkbench() {
 
       <div className="panel space-y-3 p-4">
         <div className="label-mono">protein</div>
-        <ProteinFinder onPick={(acc) => void pickProtein(acc)} />
+        <ProteinFinder onPick={(p) => void pickProtein(p.accession)} />
         {profileLoading && (
           <div className="loading-pulse font-mono text-xs text-ink3">loading profile…</div>
         )}
