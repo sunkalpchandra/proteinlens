@@ -4,6 +4,7 @@
  *  clipboard API for copy, a Blob object-URL anchor for the FASTA download. */
 
 import { useEffect, useRef, useState } from "react";
+import { downloadFasta } from "@/lib/download";
 
 export function SequenceActions({
   accession,
@@ -32,16 +33,6 @@ export function SequenceActions({
     }
   };
 
-  const downloadFasta = () => {
-    const lines = sequence.match(/.{1,60}/g) ?? [sequence];
-    const fasta = `>${accession} ${name}\n${lines.join("\n")}\n`;
-    const url = URL.createObjectURL(new Blob([fasta], { type: "text/plain" }));
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `${accession}.fasta`;
-    anchor.click();
-    URL.revokeObjectURL(url);
-  };
 
   return (
     <span className="flex items-center gap-2">
@@ -54,7 +45,7 @@ export function SequenceActions({
       </button>
       <button
         type="button"
-        onClick={downloadFasta}
+        onClick={() => downloadFasta(`${accession}.fasta`, `${accession} ${name}`, sequence)}
         className="rounded border border-bd px-2 py-0.5 font-mono text-[10px] text-ink2 hover:bg-surface2"
       >
         fasta
