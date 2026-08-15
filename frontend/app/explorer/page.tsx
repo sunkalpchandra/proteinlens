@@ -49,6 +49,12 @@ export default function ExplorerPage() {
   const [attentionAvailable, setAttentionAvailable] = useState(true);
   const [preset, setPreset] = useState<MapPreset>("default");
   const [presetAvailable, setPresetAvailable] = useState(true);
+
+  // Presets are built for mean pooling only; a carried-over preset would 404
+  // and wrongly mark the other pooling unavailable.
+  useEffect(() => {
+    if (pooling !== "mean") setPreset("default");
+  }, [pooling]);
   const [map, setMap] = useState<MapPayload | null>(null);
   const [mapLoading, setMapLoading] = useState(true);
   const [mapError, setMapError] = useState<string | null>(null);
@@ -107,14 +113,15 @@ export default function ExplorerPage() {
       })
       .catch((e: unknown) => {
         if (stale) return;
-        if (pooling === "attention") {
+        if (preset !== "default") {
+          // Preset not built (or transient failure) — retry at default before
+          // concluding anything about the pooling itself.
+          setPresetAvailable(false);
+          setPreset("default");
+        } else if (pooling === "attention") {
           // No attention projection: disable the option and fall back.
           setAttentionAvailable(false);
           setPooling("mean");
-        } else if (preset !== "default") {
-          // Preset not built for this deployment — fall back quietly.
-          setPresetAvailable(false);
-          setPreset("default");
         } else {
           setMapError(errorMessage(e));
           setMapLoading(false);
