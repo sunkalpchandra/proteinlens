@@ -30,7 +30,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from ml.clustering import cluster_summaries, kmeans_clusters, outlier_scores  # noqa: E402
 from ml.embeddings import EmbeddingStore  # noqa: E402
-from ml.projection import ProjectionCache, ProjectionParams  # noqa: E402
+from ml.projection import MAP_PRESETS, ProjectionCache, ProjectionParams, map_filename  # noqa: E402
 from ml.retrieval import ProteinIndex  # noqa: E402
 from ml.tracking import log_experiment  # noqa: E402
 
@@ -38,17 +38,6 @@ MAP_COLUMNS = [
     "accession", "protein_name", "gene", "organism_short", "length",
     "family", "pfam_primary", "ec_class", "is_enzyme", "localization",
 ]
-
-
-# UMAP neighborhood presets. "default" balances both scales; "local" (small
-# neighborhood) sharpens fine family structure; "global" (large neighborhood)
-# preserves broad layout. Each preset is a separate cached projection; cluster
-# labels, kNN stats, and outliers are projection-independent and shared.
-MAP_PRESETS: dict[str, dict] = {
-    "default": {"n_neighbors": 15, "min_dist": 0.1},
-    "local": {"n_neighbors": 5, "min_dist": 0.05},
-    "global": {"n_neighbors": 50, "min_dist": 0.3},
-}
 
 
 def build_map_payload(
@@ -116,8 +105,7 @@ def build_map_payload(
             "clustering": cluster_info,
             "points": points,
         }
-        suffix = "" if preset == "default" else f"_{preset}"
-        (out_dir / f"map_{pooling}{suffix}.json").write_text(json.dumps(payload))
+        (out_dir / map_filename(pooling, preset)).write_text(json.dumps(payload))
 
     summaries = cluster_summaries(meta, labels)
     (out_dir / f"clusters_{pooling}.json").write_text(
@@ -132,7 +120,7 @@ def main() -> int:
     parser.add_argument("--embeddings", type=Path, default=Path("data/embeddings"))
     parser.add_argument("--out", type=Path, default=Path("data/index"))
     parser.add_argument("--map-poolings", nargs="+", default=["mean", "attention"])
-    parser.add_argument("--presets", nargs="+", default=["default", "local", "global"],
+    parser.add_argument("--presets", nargs="+", default=list(MAP_PRESETS),
                         choices=list(MAP_PRESETS))
     parser.add_argument("--n-clusters", type=int, default=25)
     parser.add_argument("--seed", type=int, default=42)
@@ -153,8 +141,11 @@ def main() -> int:
             print(f"  skipping map for '{pooling}' (no embeddings)")
             continue
         print(f"Map payload: {pooling}")
-        # Alternative presets only for the primary (mean) map to bound build time.
+        # Alternative presets only for the primary (mean) map to bound build
+        # time; "default" is always built — every downstream consumer needs it.
         presets = args.presets if pooling == "mean" else ["default"]
+        if "default" not in presets:
+            presets = ["default", *presets]
         metrics[pooling] = build_map_payload(
             df, store, pooling, args.out, args.n_clusters, args.seed, presets
         )
