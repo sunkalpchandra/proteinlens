@@ -34,6 +34,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from ml.embeddings import EmbeddingStore  # noqa: E402
+from ml.projection import MAP_PRESETS, map_filename  # noqa: E402
 from ml.retrieval import ProteinIndex  # noqa: E402
 
 # Well-known proteins that make the demo immediately legible (kept in the
@@ -123,17 +124,19 @@ def main() -> int:
     (out / "landscapes").mkdir(parents=True, exist_ok=True)
 
     # --- map + finder ---------------------------------------------------------
-    for suffix in ("", "_local", "_global"):
-        src = Path(f"data/index/map_mean{suffix}.json")
+    for preset in MAP_PRESETS:
+        name = map_filename("mean", preset)
+        src = Path("data/index") / name
         if not src.exists():
+            print(f"  WARNING: {name} not built — demo will lack the '{preset}' preset")
             continue
-        full = json.loads(src.read_text()) if suffix else map_payload
+        full = json.loads(src.read_text()) if preset != "default" else map_payload
         by_id = {p["id"]: p for p in full["points"]}
         demo_map = {
             **{k: v for k, v in full.items() if k != "points"},
             "points": [by_id[acc] for acc in subset if acc in by_id],
         }
-        (out / f"map_mean{suffix}.json").write_text(json.dumps(demo_map))
+        (out / name).write_text(json.dumps(demo_map))
     # Cluster summaries travel as-is: they describe full-corpus clusters, and
     # the map subset carries the same cluster ids.
     clusters_src = Path("data/index/clusters_mean.json")
