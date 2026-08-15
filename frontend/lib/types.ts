@@ -61,6 +61,8 @@ export interface ProteinProfile {
   protein: ProteinSummary;
   protein_name_full: string;
   keywords: string[];
+  /** UniProt-cross-referenced PDB structure ids (subset). */
+  pdb?: string[];
   sequence: string;
   model: string;
   stats: RepresentationStats;

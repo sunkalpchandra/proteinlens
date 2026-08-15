@@ -428,6 +428,23 @@ export function ProteinPageClient() {
             )}
           </div>
         )}
+        {(profile.pdb?.length ?? 0) > 0 && (
+          <div className="mt-2 flex flex-wrap items-baseline gap-1.5">
+            <span className="label-mono mr-1 text-[9px]">structures</span>
+            {profile.pdb?.map((id) => (
+              <a
+                key={id}
+                href={`https://www.rcsb.org/structure/${id}`}
+                target="_blank"
+                rel="noreferrer"
+                title={`PDB ${id} at RCSB`}
+                className="rounded border border-bd px-1.5 py-0.5 font-mono text-[10px] text-accent hover:bg-surface2"
+              >
+                {id}
+              </a>
+            ))}
+          </div>
+        )}
       </header>
 
       {/* Representation ------------------------------------------------------ */}
