@@ -48,3 +48,10 @@ describe("SequenceViewer keyboard navigation", () => {
     expect(screen.queryByRole("listbox")).toBeNull();
   });
 });
+
+it("first keypress with no selection lands on residue 1", () => {
+  const onSelect = vi.fn();
+  render(<SequenceViewer sequence="MKTVH" onSelect={onSelect} />);
+  fireEvent.keyDown(screen.getByRole("listbox"), { key: "ArrowRight" });
+  expect(onSelect).toHaveBeenCalledWith(1);
+});

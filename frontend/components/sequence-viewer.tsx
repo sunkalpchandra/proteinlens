@@ -67,7 +67,12 @@ export function SequenceViewer({
             : 0;
           if (step === 0) return;
           e.preventDefault();
-          const next = Math.min(sequence.length, Math.max(1, (selected ?? 1) + step));
+          // No selection yet: the first keypress selects residue 1 rather
+          // than acting as if residue 1 were already selected.
+          const next =
+            selected === null
+              ? 1
+              : Math.min(sequence.length, Math.max(1, selected + step));
           onSelect(next);
         }}
       >
