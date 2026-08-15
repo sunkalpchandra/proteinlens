@@ -93,7 +93,7 @@ def main() -> int:
         dms["cosine"] = [cosine_similarity(z_wt, v) for v in vectors]
 
     args.reports.mkdir(exist_ok=True)
-    dms.to_csv(args.reports / "dms_validation.csv", index=False)
+    dms.to_csv(args.reports / f"dms_validation_{args.accession}.csv", index=False)
 
     pairs = {"llr": dms["llr"]}
     if "displacement" in dms:
@@ -138,8 +138,8 @@ def main() -> int:
         "protein and assay; neither statistic is a fitness predictor.",
         "",
     ]
-    (args.reports / "dms_validation.md").write_text("\n".join(lines))
-    print(f"Wrote {args.reports / 'dms_validation.md'}")
+    (args.reports / f"dms_validation_{args.accession}.md").write_text("\n".join(lines))
+    print(f"Wrote {args.reports / f'dms_validation_{args.accession}.md'}")
 
     log_experiment("dms_validation",
                    config={"accession": args.accession, "urn": manifest["urn"],
