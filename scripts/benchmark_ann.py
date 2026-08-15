@@ -49,6 +49,11 @@ def bench_regime(
         t0 = time.time()
         index = ProteinIndex.build(embeddings, accessions, "bench", backend=backend)
         build_s = time.time() - t0
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            index.save(tmp)
+            size_mb = (Path(tmp) / "index_bench.faiss").stat().st_size / 1e6
 
         t0 = time.time()
         _, result_rows = index.index.search(queries, k)
@@ -63,11 +68,12 @@ def bench_regime(
         rows.append({
             "regime": name, "backend": backend, "n_vectors": len(embeddings),
             "dim": embeddings.shape[1], "build_s": round(build_s, 2),
+            "size_mb": round(size_mb, 1),
             "qps": round(len(queries) / query_s, 1),
             f"recall@{k}": round(recall, 4),
         })
-        print(f"  {name:<10} {backend:<5} build {build_s:6.1f}s  "
-              f"qps {rows[-1]['qps']:>9}  recall@{k} {recall:.4f}")
+        print(f"  {name:<10} {backend:<6} build {build_s:6.1f}s  "
+              f"{size_mb:7.1f}MB  qps {rows[-1]['qps']:>9}  recall@{k} {recall:.4f}")
     return rows
 
 
@@ -111,12 +117,12 @@ def main() -> int:
         f"Recall is against exact (`flat`) search on identical queries "
         f"(k=10, n={args.queries}).",
         "",
-        "| regime | backend | vectors | build s | QPS | recall@10 |",
-        "|---|---|---|---|---|---|",
+        "| regime | backend | vectors | build s | size MB | QPS | recall@10 |",
+        "|---|---|---|---|---|---|---|",
     ]
     for r in rows:
         lines.append(f"| {r['regime']} | {r['backend']} | {r['n_vectors']:,} "
-                     f"| {r['build_s']} | {r['qps']:,} | {r['recall@10']} |")
+                     f"| {r['build_s']} | {r['size_mb']} | {r['qps']:,} | {r['recall@10']} |")
     lines += [
         "",
         "Reading: at 12k vectors exact search is already fast — the ANN backends "
