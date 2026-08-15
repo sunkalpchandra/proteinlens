@@ -17,7 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
-from api.routes import compare, corpus, mutation, proteins, regions, search
+from api.routes import compare, corpus, fetch, mutation, proteins, regions, search
 from api.state import get_state
 from ml.sequence import SequenceValidationError
 from models.pooling import PoolingUnavailableError
@@ -98,6 +98,7 @@ async def artifact_error_handler(_: Request, exc: FileNotFoundError) -> JSONResp
 
 
 app.include_router(compare.router)
+app.include_router(fetch.router)
 app.include_router(corpus.router)
 app.include_router(proteins.router)
 app.include_router(regions.router)

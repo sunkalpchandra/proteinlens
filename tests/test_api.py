@@ -220,3 +220,15 @@ class TestClusterAlgorithms:
         response = client.get("/clusters", params={"algorithm": "hdbscan"})
         assert response.status_code == 404
         assert "hdbscan" in response.json()["detail"]
+
+
+class TestFetchProtein:
+    def test_corpus_accession_served_locally(self, client):
+        body = client.post("/fetch-protein", json={"accession": "T0000"}).json()
+        assert body["source"] == "corpus"
+        assert body["protein"]["accession"] == "T0000"
+        assert len(body["hits"]) == 10
+
+    def test_malformed_accession_422(self, client):
+        response = client.post("/fetch-protein", json={"accession": "not-anid!!"})
+        assert response.status_code == 422

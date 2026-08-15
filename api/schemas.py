@@ -289,3 +289,17 @@ class StatsResponse(BaseModel):
     encoder_loaded: bool
     embeddings_created_at: str | None
     appended_proteins: list[str]
+
+
+class FetchProteinRequest(BaseModel):
+    accession: str = Field(..., min_length=1, max_length=16, examples=["P69905"])
+
+
+class FetchProteinResponse(BaseModel):
+    source: Literal["corpus", "uniprot"]
+    protein: ProteinSummary
+    hits: list[SearchHitOut]
+    note: str = (
+        "Externally fetched entries are embedded on demand and searched "
+        "against the corpus; they are not added to the corpus or the map."
+    )
