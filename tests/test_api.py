@@ -193,3 +193,19 @@ class TestStats:
         assert body["index_backend"] == "flat"
         assert body["encoder_loaded"] is False
         assert body["adhoc_cache_entries"] == 0
+
+
+class TestMapPresets:
+    def test_unknown_preset_422(self, client):
+        response = client.get("/map", params={"preset": "cosmic"})
+        assert response.status_code == 422
+        assert "cosmic" in response.json()["detail"]
+
+    def test_missing_preset_artifact_404_with_context(self, client):
+        response = client.get("/map", params={"preset": "local"})
+        assert response.status_code == 404
+
+    def test_nonmean_pooling_with_preset_explains_limitation(self, client):
+        response = client.get("/map", params={"pooling": "attention", "preset": "local"})
+        assert response.status_code == 404
+        assert "mean pooling" in response.json()["detail"]
