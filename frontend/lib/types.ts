@@ -217,3 +217,10 @@ export interface ComparePayload {
 }
 
 export type MapPreset = "default" | "local" | "global";
+
+export interface FetchProteinPayload {
+  source: "corpus" | "uniprot";
+  protein: ProteinSummary;
+  hits: SearchHit[];
+  note: string;
+}

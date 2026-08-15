@@ -15,6 +15,7 @@ import type {
   ClustersPayload,
   ComparePayload,
   DomainsPayload,
+  FetchProteinPayload,
   Health,
   Landscape,
   MapPayload,
@@ -322,4 +323,14 @@ export const LIVE_NOTICE = "Requires the live API — run the backend locally.";
 export function errorMessage(e: unknown): string {
   if (e instanceof ApiError && e.status === 501) return LIVE_NOTICE;
   return e instanceof Error ? e.message : String(e);
+}
+
+export async function fetchProtein(accession: string): Promise<FetchProteinPayload> {
+  if (!isLive) {
+    throw new ApiError(501, "Fetching external proteins needs the live API.");
+  }
+  return request<FetchProteinPayload>("/fetch-protein", {
+    method: "POST",
+    body: JSON.stringify({ accession }),
+  });
 }
