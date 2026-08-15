@@ -115,12 +115,10 @@ def onehot_mean_features(sequence: str) -> np.ndarray:
     return vec
 
 
-def sequence_identity(a: str, b: str) -> float:
-    """Global alignment identity via Biopython PairwiseAligner (BLOSUM62).
-
-    Identity = matches / alignment length. This is a lightweight metric for
-    analysis plots, not a substitute for a proper homology search tool.
-    """
+@functools.lru_cache(maxsize=1)
+def _blosum62_aligner():
+    """Configured global BLOSUM62 aligner, built once — the matrix load reads
+    a data file and per-call construction was pure overhead on /compare."""
     from Bio import Align
     from Bio.Align import substitution_matrices
 
@@ -129,7 +127,16 @@ def sequence_identity(a: str, b: str) -> float:
     aligner.open_gap_score = -11
     aligner.extend_gap_score = -1
     aligner.mode = "global"
-    alignment = aligner.align(a, b)[0]
+    return aligner
+
+
+def sequence_identity(a: str, b: str) -> float:
+    """Global alignment identity via Biopython PairwiseAligner (BLOSUM62).
+
+    Identity = matches / alignment length. This is a lightweight metric for
+    analysis plots, not a substitute for a proper homology search tool.
+    """
+    alignment = _blosum62_aligner().align(a, b)[0]
     aligned_a, aligned_b = alignment[0], alignment[1]
     matches = sum(1 for x, y in zip(aligned_a, aligned_b, strict=True) if x == y and x != "-")
     return matches / max(len(aligned_a), 1)
