@@ -158,12 +158,13 @@ def main() -> int:
     if not args.skip_inference:
         from ml.embeddings import EmbeddingPipeline
         from models.mutation import MutationAnalyzer
-        from models.scoring import MaskedLMScorer
+        from models.scoring import MaskedLMScorer, conservation_profile
 
         pipeline = EmbeddingPipeline(cache_path=None)
         analyzer = MutationAnalyzer(pipeline)
         scorer = MaskedLMScorer()
         pooler = pipeline.pooler.attention_pooler
+        conservation_by_acc: dict[str, dict] = {}
 
         for acc, positions in SHOWCASE.items():
             if acc not in subset_set:
@@ -176,6 +177,10 @@ def main() -> int:
                     encoded = pipeline.encode_residues(seq)
                     _, weights = pooler(encoded.residue_embeddings)
                 attention[acc] = [round(float(w), 6) for w in weights.numpy()]
+
+            conservation_by_acc[acc] = conservation_profile(
+                scorer.log_probs(seq), seq
+            )
 
             landscapes = {}
             for pos in positions:
@@ -228,6 +233,8 @@ def main() -> int:
         }
         if acc in attention:
             profile["attention_weights"] = attention[acc]
+        if not args.skip_inference and acc in conservation_by_acc:
+            profile["conservation"] = conservation_by_acc[acc]
         if acc in domains_by_acc:
             profile["domains"] = domains_by_acc[acc]
         (out / "profiles" / f"{acc}.json").write_text(json.dumps(profile))
