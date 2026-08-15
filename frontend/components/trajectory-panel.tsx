@@ -167,15 +167,18 @@ export function TrajectoryPanel({ accession, pooling, seedMutation = null }: Tra
 }
 
 function TrajectoryResult({ result }: { result: TrajectoryPayload }) {
+  // Layout: each gap = a fixed minimum plus a share proportional to that
+  // step's displacement, then the whole path is normalized onto the viewBox.
   const width = 680;
+  const PAD = 24;
+  const MIN_GAP = 1; // in units of "one max-sized displacement"
   const maxD = Math.max(...result.steps.map((s) => s.step_displacement), 1e-9);
-  // Horizontal spacing ∝ step displacement; cumulative x positions.
-  const xs: number[] = [24];
-  for (const s of result.steps) {
-    xs.push(xs[xs.length - 1] + 40 + (s.step_displacement / maxD) * ((width - 80) / result.n_steps - 40));
+  const gaps = result.steps.map((s) => MIN_GAP + s.step_displacement / maxD);
+  const total = gaps.reduce((a, b) => a + b, 0);
+  const px: number[] = [PAD];
+  for (const gap of gaps) {
+    px.push(px[px.length - 1] + (gap / total) * (width - 2 * PAD));
   }
-  const scale = (width - 48) / Math.max(xs[xs.length - 1] - 24, 1);
-  const px = xs.map((x) => 24 + (x - 24) * scale);
   const y = 46;
 
   return (
