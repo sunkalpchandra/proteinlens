@@ -55,11 +55,18 @@ def embedding_map(
 
 @router.get("/clusters")
 def clusters(
-    pooling: str = Query("mean"), state: AppState = Depends(get_state)
+    pooling: str = Query("mean"),
+    algorithm: str = Query("kmeans"),
+    state: AppState = Depends(get_state),
 ) -> Response:
-    path = state.index_dir / f"clusters_{pooling}.json"
+    if algorithm not in ("kmeans", "hdbscan"):
+        raise HTTPException(422, f"Unknown algorithm '{algorithm}'. Options: kmeans, hdbscan")
+    suffix = "" if algorithm == "kmeans" else "_hdbscan"
+    path = state.index_dir / f"clusters_{pooling}{suffix}.json"
     if not path.exists():
-        raise HTTPException(404, f"No cluster summary for pooling '{pooling}'. Run scripts/build_index.py.")
+        raise HTTPException(
+            404, f"No {algorithm} summary for pooling '{pooling}'. Run scripts/build_index.py."
+        )
     return Response(content=path.read_bytes(), media_type="application/json")
 
 
