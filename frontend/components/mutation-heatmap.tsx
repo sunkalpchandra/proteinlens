@@ -15,12 +15,13 @@ import { useMemo, useRef, useState } from "react";
 import { AA_LIST, blueRamp } from "@/lib/palette";
 import type { Landscape, LandscapeEffect } from "@/lib/types";
 
-export type LandscapeMetric = "displacement" | "cosine_similarity" | "local_delta";
+export type LandscapeMetric = "displacement" | "cosine_similarity" | "local_delta" | "llr";
 
 export const METRIC_LABEL: Record<LandscapeMetric, string> = {
   displacement: "displacement ‖Δz‖",
   cosine_similarity: "cosine similarity",
   local_delta: "local Δ (±8)",
+  llr: "LM log-likelihood ratio",
 };
 
 export interface MutationHeatmapProps {
@@ -32,11 +33,14 @@ export interface MutationHeatmapProps {
 
 /** Magnitude of perturbation under the chosen metric (always "bigger = more"). */
 function perturbationOf(e: LandscapeEffect, metric: LandscapeMetric): number {
-  return metric === "cosine_similarity" ? 1 - e.cosine_similarity : e[metric];
+  if (metric === "cosine_similarity") return 1 - e.cosine_similarity;
+  if (metric === "llr") return -(e.llr ?? 0); // more negative LLR = more disfavored
+  return e[metric];
 }
 
 /** Raw metric value for display (cosine shows the actual cosine). */
 function displayOf(e: LandscapeEffect, metric: LandscapeMetric): number {
+  if (metric === "llr") return e.llr ?? 0;
   return e[metric];
 }
 

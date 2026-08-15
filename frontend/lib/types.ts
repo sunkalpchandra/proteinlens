@@ -72,6 +72,8 @@ export interface ProteinProfile {
 export interface MutationResult {
   mutation: string;
   pooling: Pooling;
+  /** Wild-type-marginal log-likelihood ratio (negative = model disfavors). */
+  llr: number;
   displacement: number;
   relative_displacement: number;
   cosine_similarity: number;
@@ -85,6 +87,7 @@ export interface MutationResult {
 export interface LandscapeEffect {
   mutant: string;
   mutation: string;
+  llr?: number;
   displacement: number;
   cosine_similarity: number;
   local_delta: number;
