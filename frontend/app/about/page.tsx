@@ -150,7 +150,11 @@ export default function AboutPage() {
             the ProstT5 encoder as a structure-aware reference (3Di-translation training,
             ~1.2B parameters, fp16 — a reference point rather than a like-for-like
             pooling comparison). Every candidate embeds the identical subset and runs the
-            identical probe/retrieval/clustering suite.
+            identical probe/retrieval/clustering suite. Density-based clustering adds
+            an honest footnote: HDBSCAN on this corpus (PCA-50 space, leaf selection)
+            finds 47 tight islands while ~90% of proteins sit on one connected
+            low-density manifold — embedding space is mostly a continuum, not a set of
+            well-separated blobs, which is why the browsable partition uses k-means.
           </p>
         </Section>
 
