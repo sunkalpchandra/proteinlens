@@ -116,9 +116,12 @@ per-residue: ‖Δhᵢ‖₂        local window ±8 around the site
 Displayed strictly as **representation-space perturbation** — not fitness, stability, or
 pathogenicity. The landscape view computes all 19 substitutions at a site in one batched pass.
 
-**Clustering & outliers.** K-means (k=25) and HDBSCAN on normalized embeddings; outlier score is
-the percentile of mean cosine distance to the 10 nearest neighbors — a geometric isolation
-statement, not a biological anomaly claim.
+**Clustering & outliers.** Two lenses: k-means (k=25) partitions the whole corpus, and HDBSCAN
+(leaf selection, PCA-50 space) reports *density islands* — on this corpus, 47 tight islands with
+~90% of proteins on one connected low-density manifold, which HDBSCAN honestly labels noise.
+(Density-based clustering collapses in raw 480-d space; the PCA-50 reduction and the finding are
+recorded in the artifact.) Outlier score is the percentile of mean cosine distance to the 10
+nearest neighbors — a geometric isolation statement, not a biological anomaly claim.
 
 ## Data
 
@@ -267,8 +270,10 @@ results, pooling comparison, clusters, outliers.
 ```text
 proteinlens/
 ├── models/            # encoder.py (frozen ESM-2) · pooling.py · mutation.py
-├── ml/                # embeddings, retrieval, projection, clustering,
-│                      # splitting, probes, evaluation, tracking, sequence
+│                      # registry.py (checkpoints) · prost_encoder.py (ProstT5)
+├── ml/                # embeddings, retrieval (flat/HNSW/IVF), projection+presets,
+│                      # clustering, splitting (annotation/MMseqs2), probes,
+│                      # evaluation, losses (SupCon), regions, corpus, tracking
 ├── api/               # FastAPI app: schemas, state, routes/
 ├── scripts/           # download → preprocess → splits → pooler → embed →
 │                      # index → benchmarks → figures → demo bundle
