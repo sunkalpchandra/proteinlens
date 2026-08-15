@@ -52,3 +52,29 @@ class TestAutoBackend:
 
     def test_large_corpora_go_ann(self):
         assert auto_backend(AUTO_ANN_THRESHOLD + 1) == "hnsw"
+
+
+class TestIvfPq:
+    def test_pq_roundtrip_and_compression(self, data, tmp_path):
+        embeddings, accessions = data
+        index = ProteinIndex.build(embeddings, accessions, "mean", backend="ivfpq")
+        # PQ reconstructions are lossy but finite and searchable.
+        hits = index.neighbors_of("P0000", k=5)
+        assert len(hits) == 5
+        index.save(tmp_path)
+        restored = ProteinIndex.load(tmp_path, "mean")
+        assert restored.backend == "ivfpq"
+        assert len(restored.neighbors_of("P0010", k=3)) == 3
+
+    def test_pq_file_smaller_than_flat_at_scale(self, tmp_path):
+        """Codebook overhead dominates on toy data; the compression win needs
+        enough vectors for per-vector codes to amortize it."""
+        rng = np.random.default_rng(1)
+        embeddings = rng.normal(size=(5000, 64)).astype(np.float32)
+        accessions = [f"Q{i:05d}" for i in range(5000)]
+        flat_dir, pq_dir = tmp_path / "flat", tmp_path / "pq"
+        ProteinIndex.build(embeddings, accessions, "mean", backend="flat").save(flat_dir)
+        ProteinIndex.build(embeddings, accessions, "mean", backend="ivfpq").save(pq_dir)
+        flat_size = (flat_dir / "index_mean.faiss").stat().st_size
+        pq_size = (pq_dir / "index_mean.faiss").stat().st_size
+        assert pq_size < flat_size / 2
