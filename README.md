@@ -123,12 +123,22 @@ LLR(pos, wt→mut) = log P(x_pos = mut | x_wt) − log P(x_pos = wt | x_wt)
 computed for a whole 19-way landscape from a single forward pass. Both are displayed strictly as
 model statistics — not fitness, stability, or pathogenicity predictions.
 
-**Validated against experiment.** `make dms` downloads the human Calmodulin DMS-TileSeq assay
-from [MaveDB](https://www.mavedb.org) (2,525 measured single substitutions) and correlates both
-statistics with the assay: **LLR ρ = +0.187, −‖Δz‖ ρ = +0.170** (both p < 1e-17;
-`reports/dms_validation.md`, figure 11). Magnitudes fit the encoder's 35M scale — published
-zero-shot correlations reach ~0.4–0.5 only for 650M+ models — and displacement tracks the assay
-nearly as well as the likelihood score.
+**Validated against experiment.** `make dms` downloads measured deep-mutational-scanning
+assays from [MaveDB](https://www.mavedb.org) — four TileSeq complementation datasets (CALM1,
+SUMO1, UBE2I, TPK1; **11,296 measured substitutions**) — and correlates both statistics with
+each assay (`reports/dms_summary.md`, figures 11–12):
+
+| protein | variants | ρ LLR | ρ −‖Δz‖ |
+|---|---|---|---|
+| CALM1 | 2,525 | +0.187 | +0.170 |
+| SUMO1 | 1,778 | **+0.477** | +0.244 |
+| UBE2I | 2,870 | −0.011 (n.s.) | **+0.148** |
+| TPK1 | 4,123 | +0.154 | +0.160 |
+
+The likelihood ratio is high-variance across assays while embedding displacement is more
+consistent, matching or exceeding it on half of them — at 35M scale, neither statistic
+dominates. Magnitudes fit the encoder's size (published zero-shot correlations reach ~0.4–0.5
+only at 650M+).
 
 **Clustering & outliers.** Two lenses: k-means (k=25) partitions the whole corpus, and HDBSCAN
 (leaf selection, PCA-50 space) reports *density islands* — on this corpus, 47 tight islands with
