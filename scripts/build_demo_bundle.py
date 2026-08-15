@@ -158,9 +158,11 @@ def main() -> int:
     if not args.skip_inference:
         from ml.embeddings import EmbeddingPipeline
         from models.mutation import MutationAnalyzer
+        from models.scoring import MaskedLMScorer
 
         pipeline = EmbeddingPipeline(cache_path=None)
         analyzer = MutationAnalyzer(pipeline)
+        scorer = MaskedLMScorer()
         pooler = pipeline.pooler.attention_pooler
 
         for acc, positions in SHOWCASE.items():
@@ -179,6 +181,9 @@ def main() -> int:
             for pos in positions:
                 if 1 <= pos <= len(seq):
                     landscape = analyzer.landscape(seq, pos, "mean")
+                    scores = scorer.position_scores(seq, pos)
+                    for effect in landscape["effects"]:
+                        effect["llr"] = round(scores[effect["mutant"]], 4)
                     landscape["note"] = (
                         "Representation-space perturbation of a frozen protein "
                         "language model; not a fitness, stability, or "
