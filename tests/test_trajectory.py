@@ -28,6 +28,15 @@ class StubPipeline:
     encoder = StubEncoder()
     pooler = Pooler(None)
 
+    def embed(self, sequence, pooling="mean"):
+        enc = self.encoder.encode_batch([sequence])[0]
+        pooled, _ = self.pooler.pool(enc.residue_embeddings, enc.bos_embedding, pooling)
+
+        class Result:
+            embedding = pooled.numpy()
+
+        return Result()
+
 
 @pytest.fixture
 def analyzer() -> TrajectoryAnalyzer:

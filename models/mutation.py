@@ -14,6 +14,7 @@ pathogenicity predictions.
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 
 import numpy as np
@@ -214,28 +215,39 @@ class TrajectoryAnalyzer:
 
     Mutations apply cumulatively — each label's wild-type letter is validated
     against the sequence *after* the previous steps, so 'A10G' followed by
-    'G10A' is a legal round trip. All step sequences encode in one batched
-    pass. Reported motion is representation-space displacement, not an
-    evolutionary or fitness trajectory.
+    'G10A' is a legal round trip. Step embeddings go through the pipeline's
+    cache, so the incremental UI workflow (add one mutation, re-run) re-encodes
+    only the new step. Reported motion is representation-space displacement,
+    not an evolutionary or fitness trajectory.
+
+    The pipeline may be passed as a zero-arg factory: it is resolved only
+    after chain validation succeeds, so invalid requests never trigger
+    encoder loading — the guarantee lives here, not in each caller.
     """
 
     MAX_STEPS = MAX_TRAJECTORY_STEPS
 
-    def __init__(self, pipeline: EmbeddingPipeline) -> None:
-        self.pipeline = pipeline
+    def __init__(
+        self, pipeline: EmbeddingPipeline | Callable[[], EmbeddingPipeline]
+    ) -> None:
+        self._pipeline_source = pipeline
+        self._resolved: EmbeddingPipeline | None = None
+
+    @property
+    def pipeline(self) -> EmbeddingPipeline:
+        if self._resolved is None:
+            source = self._pipeline_source
+            self._resolved = source() if callable(source) else source
+        return self._resolved
 
     def trajectory(
         self, sequence: str, mutations: list[str], pooling: str = "mean"
     ) -> dict:
+        # Validate before resolving the pipeline — bad chains must not load
+        # the encoder even when a lazy factory was supplied.
         sequences, labels = build_mutation_chain(sequence, mutations, self.MAX_STEPS)
 
-        encoded = self.pipeline.encoder.encode_batch(sequences)
-        vectors = []
-        for enc in encoded:
-            pooled, _ = self.pipeline.pooler.pool(
-                enc.residue_embeddings, enc.bos_embedding, pooling
-            )
-            vectors.append(pooled.numpy().astype(np.float32))
+        vectors = [self.pipeline.embed(s, pooling).embedding for s in sequences]
 
         steps = []
         for i, label in enumerate(labels):
