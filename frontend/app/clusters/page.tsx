@@ -100,7 +100,7 @@ export default function ClustersPage() {
           <span>
             {algorithm === "kmeans"
               ? `k=${payload.clustering.n_clusters ?? payload.clusters.length} · silhouette ${payload.clustering.silhouette_cosine?.toFixed(3) ?? "—"}`
-              : `${payload.clustering.n_clusters ?? "—"} clusters · noise labeled −1`}
+              : `${payload.clustering.n_clusters ?? "—"} density islands · unassigned bulk labeled noise`}
           </span>
           <Link href="/explorer?color=cluster" className="text-accent hover:underline">
             map →
