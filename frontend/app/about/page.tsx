@@ -121,9 +121,15 @@ export default function AboutPage() {
             ‖z_wt‖), the cosine similarity between wild-type and mutant embeddings, and
             per-residue deltas in a local window around the mutated position. This is a{" "}
             <span className="text-ink">representation-space perturbation measure</span>:
-            it quantifies how much the model&apos;s encoding moves. It is not a fitness,
-            stability, or pathogenicity prediction, and it is not validated against
-            experimental mutational data.
+            it quantifies how much the model&apos;s encoding moves. Alongside it, every
+            mutation reports the wild-type-marginal log-likelihood ratio from the
+            masked-LM head — the field-standard zero-shot statistic, computed for a whole
+            landscape from one forward pass. Both were correlated against a measured
+            deep-mutational-scanning assay (human Calmodulin, 2,525 variants from
+            MaveDB): Spearman ρ of +0.19 for the likelihood ratio and +0.17 for
+            −displacement — weak but highly significant, consistent with the encoder&apos;s
+            35M-parameter scale. Neither statistic is a fitness, stability, or
+            pathogenicity prediction.
           </p>
         </Section>
 
