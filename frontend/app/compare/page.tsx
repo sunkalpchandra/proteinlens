@@ -81,19 +81,19 @@ function CompareWorkbench() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const req = useRef(0);
-  const booted = useRef(false);
 
+  // Hydrate ?a=&b= once; the read-then-set is idempotent, so no boot guard.
   useEffect(() => {
-    if (booted.current) return;
-    booted.current = true;
-    for (const [key, set] of [["a", setA], ["b", setB]] as const) {
-      const accession = params.get(key);
-      if (accession) {
-        findProteins(accession, 1)
-          .then((hits) => hits[0] && hits[0].accession === accession.toUpperCase() && set(hits[0]))
-          .catch(() => undefined);
-      }
-    }
+    const hydrate = (accession: string | null, set: (p: ProteinSummary) => void) => {
+      if (!accession) return;
+      findProteins(accession, 1)
+        .then((hits) => {
+          if (hits[0] && hits[0].accession === accession.toUpperCase()) set(hits[0]);
+        })
+        .catch(() => undefined);
+    };
+    hydrate(params.get("a"), setA);
+    hydrate(params.get("b"), setB);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
