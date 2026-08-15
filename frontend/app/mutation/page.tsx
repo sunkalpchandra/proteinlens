@@ -438,6 +438,9 @@ function MutationWorkbench() {
                   <option value="displacement">displacement</option>
                   <option value="cosine_similarity">cosine similarity</option>
                   <option value="local_delta">local Δ</option>
+                  <option value="llr" disabled={landscape.effects[0]?.llr === undefined}>
+                    LM log-likelihood
+                  </option>
                 </select>
               </label>
             </div>
@@ -478,6 +481,7 @@ function MutationWorkbench() {
               <div className="space-y-4">
                 <div className="font-mono text-[13px] text-ink">{detail.mutation}</div>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
+                  <StatCell label="LM log-likelihood ratio" value={detail.llr} />
                   <StatCell label="‖Δz‖ displacement" value={detail.displacement} />
                   <StatCell label="relative ‖Δz‖" value={detail.relative_displacement} />
                   <StatCell label="cos(z_wt, z_mut)" value={detail.cosine_similarity} />
