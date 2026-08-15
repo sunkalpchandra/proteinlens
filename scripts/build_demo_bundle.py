@@ -106,6 +106,12 @@ def main() -> int:
     map_payload = json.loads(Path("data/index/map_mean.json").read_text())
     point_of = {p["id"]: p for p in map_payload["points"]}
 
+    pdb_path = Path("data/processed/pdb_xrefs.parquet")
+    pdb_by_acc: dict[str, list[str]] = {}
+    if pdb_path.exists():
+        for row in pd.read_parquet(pdb_path).itertuples():
+            pdb_by_acc[row.accession] = list(row.pdb_ids)[:12]
+
     domains_path = Path("data/processed/domains.parquet")
     domains_by_acc: dict[str, list[dict]] = {}
     if domains_path.exists():
@@ -199,6 +205,7 @@ def main() -> int:
         profile = {
             "protein": summary_of(row),
             "protein_name_full": row["protein_name_full"],
+            "pdb": pdb_by_acc.get(acc, []),
             "keywords": [k.strip() for k in keywords.split(";") if k.strip()][:20],
             "sequence": row["sequence"],
             "model": store.meta["model"],
