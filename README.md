@@ -190,6 +190,11 @@ python scripts/build_index.py              # FAISS + UMAP + clusters + outliers
 python scripts/run_benchmarks.py           # full evaluation suite
 python scripts/generate_figures.py         # reports/figures/*.png|pdf
 
+# Optional add-ons
+python scripts/download_domains.py         # UniProt DOMAIN coordinates (region views)
+make extended                              # checkpoint scaling + SupCon + ProstT5 studies
+make ann-benchmark                         # index backends to 150k vectors
+
 # Serve
 uvicorn api.main:app --reload              # backend on :8000
 cd frontend && npm install && NEXT_PUBLIC_API_URL=http://localhost:8000 npm run dev
