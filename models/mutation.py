@@ -18,7 +18,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from ml.embeddings import EmbeddingPipeline
+from ml.embeddings import EmbeddingPipeline, cosine_similarity
 from ml.sequence import CANONICAL_AA, SequenceValidationError, validate_sequence
 
 MUTATION_PATTERN = re.compile(r"^([A-Z])(\d+)([A-Z])$")
@@ -115,10 +115,7 @@ class MutationAnalyzer:
             pooling=pooling,
             displacement=displacement,
             relative_displacement=displacement / max(float(np.linalg.norm(z_wt)), 1e-12),
-            cosine_similarity=float(
-                np.dot(z_wt, z_mut)
-                / max(float(np.linalg.norm(z_wt) * np.linalg.norm(z_mut)), 1e-12)
-            ),
+            cosine_similarity=cosine_similarity(z_wt, z_mut),
             local_delta=float(per_residue[lo:hi].mean()),
             global_residue_delta=float(per_residue.mean()),
             per_residue_delta=[round(float(x), 5) for x in per_residue],
@@ -167,10 +164,7 @@ class MutationAnalyzer:
                     "mutant": aa,
                     "mutation": f"{wildtype_aa}{position}{aa}",
                     "displacement": float(np.linalg.norm(delta)),
-                    "cosine_similarity": float(
-                        np.dot(z_wt, z_mut)
-                        / max(float(np.linalg.norm(z_wt) * np.linalg.norm(z_mut)), 1e-12)
-                    ),
+                    "cosine_similarity": cosine_similarity(z_wt, z_mut),
                     "local_delta": float(per_res[lo:hi].mean()),
                 }
             )
@@ -184,10 +178,6 @@ class MutationAnalyzer:
             "max_displacement": effects[int(np.argmax(displacements))]["mutation"],
             "min_displacement": effects[int(np.argmin(displacements))]["mutation"],
         }
-
-
-def cosine(a: np.ndarray, b: np.ndarray) -> float:
-    return float(np.dot(a, b) / max(float(np.linalg.norm(a) * np.linalg.norm(b)), 1e-12))
 
 
 MAX_TRAJECTORY_STEPS = 10
@@ -256,7 +246,7 @@ class TrajectoryAnalyzer:
                 "cumulative": labels[: i + 1],
                 "step_displacement": float(np.linalg.norm(z_here - z_prev)),
                 "displacement_from_wt": float(np.linalg.norm(z_here - vectors[0])),
-                "cosine_to_wt": cosine(vectors[0], z_here),
+                "cosine_to_wt": cosine_similarity(vectors[0], z_here),
             })
 
         path_length = float(sum(s["step_displacement"] for s in steps))

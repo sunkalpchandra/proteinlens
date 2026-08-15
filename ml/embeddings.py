@@ -273,3 +273,10 @@ def l2_normalize(matrix: np.ndarray, eps: float = 1e-12) -> np.ndarray:
         return matrix / max(float(np.linalg.norm(matrix)), eps)
     norms = np.linalg.norm(matrix, axis=1, keepdims=True)
     return matrix / np.maximum(norms, eps)
+
+
+def cosine_similarity(a: np.ndarray, b: np.ndarray, eps: float = 1e-12) -> float:
+    """Cosine similarity with a zero-vector guard — the single shared helper
+    (mutation analysis, trajectories, and the compare endpoint all use it, so
+    the epsilon convention cannot drift between endpoints)."""
+    return float(np.dot(a, b) / max(float(np.linalg.norm(a) * np.linalg.norm(b)), eps))
