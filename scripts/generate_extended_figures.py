@@ -86,9 +86,42 @@ def main() -> int:
     print("Generating extended figures…")
     fig_scaling(table)
     fig_comparison(table)
+    fig_dms()
     print("Done.")
     return 0
 
 
 if __name__ == "__main__":
     sys.exit(main())
+
+
+def fig_dms(path: Path = Path("reports/dms_validation.csv")) -> None:
+    """Figure 11: measured variant effect vs model statistics."""
+    if not path.exists():
+        print("  skipping DMS figure (no reports/dms_validation.csv)")
+        return
+    frame = pd.read_csv(path)
+    if "displacement" not in frame:
+        print("  skipping DMS figure (LLR-only run)")
+        return
+    from scipy.stats import spearmanr
+
+    fig, axes = plt.subplots(1, 2, figsize=(9.2, 4.0), sharey=True)
+    for ax, (col, label, flip) in zip(axes, [
+        ("llr", "LM log-likelihood ratio", False),
+        ("displacement", "embedding displacement ‖Δz‖", True),
+    ], strict=True):
+        x = frame[col]
+        rho = spearmanr(-x if flip else x, frame["score"]).statistic
+        ax.scatter(x, frame["score"], s=4, c=SERIES[0], alpha=0.25,
+                   linewidths=0, rasterized=True)
+        ax.set_xlabel(label)
+        ax.grid(True, alpha=0.6)
+        sign_note = "−x vs score" if flip else "x vs score"
+        ax.set_title(f"Spearman ρ = {rho:+.3f} ({sign_note})", fontsize=9)
+    axes[0].set_ylabel("measured complementation score")
+    fig.suptitle(
+        "CALM1 DMS-TileSeq (2,525 variants) vs frozen ESM-2 35M statistics",
+        y=1.02,
+    )
+    save(fig, "11_dms_validation")
