@@ -233,6 +233,8 @@ learned representation must clear.
 
 ## Results
 
+![Protein representation map — 12k Swiss-Prot proteins, colored by top families](reports/figures/01_embedding_map.png)
+
 <!-- RESULTS:BEGIN — filled by scripts/run_benchmarks.py output; see reports/benchmark.md -->
 Headline numbers from the last full run (`reports/benchmark.csv`; regenerate with
 `python scripts/run_benchmarks.py`). Probes use leakage-aware family-grouped splits.
@@ -316,6 +318,8 @@ Beyond the core benchmark, the repo carries four comparative studies on a shared
 
 Results land in `reports/extended_benchmark.{csv,md}` and figures 09–10; the benchmarks page
 renders them when present.
+
+![ESM-2 checkpoint scale vs representation quality](reports/figures/09_checkpoint_scaling.png)
 
 <!-- EXTENDED:BEGIN -->
 Headline extended numbers (subset probes use the same leakage-aware splits):
