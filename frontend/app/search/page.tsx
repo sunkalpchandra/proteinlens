@@ -3,7 +3,8 @@
 /** Search — metadata lookup over the corpus, or nearest-neighbor retrieval
  *  for a pasted amino-acid sequence (live API only; demo mode disables it). */
 
-import { useCallback, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DownloadJson } from "@/components/download-json";
 import { HitTable } from "@/components/hit-table";
 import { ApiError, findProteins, isLive, searchBySequence } from "@/lib/data";
@@ -50,7 +51,10 @@ function QuietNotice({ children }: { children: React.ReactNode }) {
   return <p className="py-2 font-mono text-[12px] text-ink3">{children}</p>;
 }
 
-export default function SearchPage() {
+function SearchWorkbench() {
+  const router = useRouter();
+  const params = useSearchParams();
+  const booted = useRef(false);
   const [tab, setTab] = useState<Tab>("metadata");
 
   // --- metadata tab -------------------------------------------------------
@@ -59,20 +63,36 @@ export default function SearchPage() {
   const [metaLoading, setMetaLoading] = useState(false);
   const [metaError, setMetaError] = useState<string | null>(null);
 
-  const runMetaSearch = useCallback(async (q: string) => {
-    const query = q.trim();
-    if (!query) return;
-    setMetaLoading(true);
-    setMetaError(null);
-    try {
-      setMetaResults(await findProteins(query));
-    } catch (e) {
-      setMetaResults(null);
-      setMetaError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setMetaLoading(false);
+  const runMetaSearch = useCallback(
+    async (q: string) => {
+      const query = q.trim();
+      if (!query) return;
+      // Shareable searches: the query lives in the URL.
+      router.replace(`/search?q=${encodeURIComponent(query)}`, { scroll: false });
+      setMetaLoading(true);
+      setMetaError(null);
+      try {
+        setMetaResults(await findProteins(query));
+      } catch (e) {
+        setMetaResults(null);
+        setMetaError(e instanceof Error ? e.message : String(e));
+      } finally {
+        setMetaLoading(false);
+      }
+    },
+    [router],
+  );
+
+  // Arrival via /search?q=… — run once.
+  useEffect(() => {
+    if (booted.current) return;
+    booted.current = true;
+    const q = params.get("q");
+    if (q) {
+      setMetaQuery(q);
+      void runMetaSearch(q);
     }
-  }, []);
+  }, [params, runMetaSearch]);
 
   // --- sequence tab -------------------------------------------------------
   const [seqRaw, setSeqRaw] = useState("");
@@ -326,5 +346,19 @@ export default function SearchPage() {
         </section>
       )}
     </div>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="mx-auto max-w-[1100px] px-4 py-6">
+          <p className="loading-pulse font-mono text-xs text-ink3">loading…</p>
+        </div>
+      }
+    >
+      <SearchWorkbench />
+    </Suspense>
   );
 }
