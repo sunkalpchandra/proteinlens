@@ -18,6 +18,7 @@ import pandas as pd
 from ml.embeddings import EmbeddingPipeline, EmbeddingStore
 from ml.retrieval import ProteinIndex
 from models.mutation import MutationAnalyzer
+from models.scoring import MaskedLMScorer
 
 
 class AppState:
@@ -46,6 +47,7 @@ class AppState:
         self._map_points_by_id: dict[str, dict[str, dict]] = {}
         self._pipeline: EmbeddingPipeline | None = None
         self._analyzer: MutationAnalyzer | None = None
+        self._scorer: MaskedLMScorer | None = None
         self.encoder_lock = threading.Lock()
         self._init_lock = threading.Lock()
 
@@ -88,6 +90,14 @@ class AppState:
         if self._analyzer is None:
             self._analyzer = MutationAnalyzer(self.pipeline)
         return self._analyzer
+
+    @property
+    def scorer(self) -> MaskedLMScorer:
+        if self._scorer is None:
+            with self._init_lock:
+                if self._scorer is None:
+                    self._scorer = MaskedLMScorer(self.model_name)
+        return self._scorer
 
     @property
     def encoder_loaded(self) -> bool:

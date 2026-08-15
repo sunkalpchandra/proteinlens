@@ -108,6 +108,10 @@ class MutationRequest(BaseModel):
 class MutationResponse(BaseModel):
     mutation: str
     pooling: Pooling
+    llr: float = Field(
+        description="Wild-type-marginal log-likelihood ratio; negative = the "
+                    "model finds the substitution less likely than wild-type."
+    )
     displacement: float
     relative_displacement: float
     cosine_similarity: float
@@ -137,6 +141,7 @@ class LandscapeRequest(BaseModel):
 class LandscapeEffect(BaseModel):
     mutant: str
     mutation: str
+    llr: float
     displacement: float
     cosine_similarity: float
     local_delta: float

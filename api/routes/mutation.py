@@ -14,7 +14,7 @@ from api.schemas import (
 )
 from api.state import AppState, get_state
 from ml.sequence import validate_sequence
-from models.mutation import TrajectoryAnalyzer
+from models.mutation import TrajectoryAnalyzer, parse_mutation
 
 router = APIRouter(tags=["mutation"])
 
@@ -30,8 +30,11 @@ def mutation(req: MutationRequest, state: AppState = Depends(get_state)) -> Muta
     seq = _resolve_sequence(state, req.accession, req.sequence)
     with state.encoder_lock:
         effect = state.analyzer.analyze(seq, req.mutation, req.pooling)
+        parsed = parse_mutation(req.mutation)
+        llr = state.scorer.llr(seq, parsed.position, parsed.mutant)
     return MutationResponse(
         mutation=effect.mutation,
+        llr=round(llr, 4),
         pooling=req.pooling,
         displacement=round(effect.displacement, 5),
         relative_displacement=round(effect.relative_displacement, 5),
@@ -50,6 +53,9 @@ def mutation_landscape(
     seq = _resolve_sequence(state, req.accession, req.sequence)
     with state.encoder_lock:
         landscape = state.analyzer.landscape(seq, req.position, req.pooling)
+        scores = state.scorer.position_scores(seq, req.position)
+    for effect in landscape["effects"]:
+        effect["llr"] = round(scores[effect["mutant"]], 4)
     return LandscapeResponse(**landscape)
 
 
