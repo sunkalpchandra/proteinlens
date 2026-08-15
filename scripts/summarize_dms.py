@@ -73,12 +73,14 @@ def main() -> int:
     lines += [
         "",
         f"Mean across assays: ρ(LLR) = {mean_llr:+.3f}, "
-        f"ρ(−‖Δz‖) = {mean_disp:+.3f}. Magnitudes are consistent with the "
-        "35M-parameter encoder (published zero-shot correlations reach "
-        "~0.4–0.5 only at 650M+); the likelihood ratio leads on every assay, "
-        "with displacement close behind. Per-assay details in "
-        "`dms_validation_{accession}.md`. Model statistics, not fitness "
-        "predictions.",
+        f"ρ(−‖Δz‖) = {mean_disp:+.3f}. The two statistics behave differently: "
+        "the likelihood ratio is high-variance across assays (from strong on "
+        "SUMO1 to indistinguishable from zero on UBE2I), while embedding "
+        "displacement is more consistent and matches or exceeds it on half "
+        "the assays. Magnitudes overall fit the 35M-parameter encoder "
+        "(published zero-shot correlations reach ~0.4–0.5 only at 650M+). "
+        "Per-assay details in `dms_validation_{accession}.md`. Model "
+        "statistics, not fitness predictions.",
         "",
     ]
     (reports / "dms_summary.md").write_text("\n".join(lines))

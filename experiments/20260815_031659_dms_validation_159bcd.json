@@ -1,0 +1,19 @@
+{
+  "experiment_id": "20260815_031659_dms_validation_159bcd",
+  "kind": "dms_validation",
+  "created_at": "2026-08-15T03:16:59.889683+00:00",
+  "git_commit": "1696262bba349e6155f94707b0e620c682131e74",
+  "config": {
+    "accession": "P63165",
+    "urn": "urn:mavedb:00000001-b-2",
+    "n_variants": 1778
+  },
+  "metrics": {
+    "spearman_llr": 0.47740839237898847,
+    "p_llr": 6.95314695783958e-102,
+    "spearman_neg_displacement": 0.24409126427080544,
+    "p_neg_displacement": 1.568255805930786e-25,
+    "spearman_cosine": 0.2331952061741628,
+    "p_cosine": 2.1962007288473434e-23
+  }
+}

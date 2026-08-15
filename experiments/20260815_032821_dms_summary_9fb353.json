@@ -1,0 +1,52 @@
+{
+  "experiment_id": "20260815_032821_dms_summary_9fb353",
+  "kind": "dms_summary",
+  "created_at": "2026-08-15T03:28:21.572210+00:00",
+  "git_commit": "bd680ee9b24b6789aefe641283bc2e861dbc9fb1",
+  "config": {
+    "assays": [
+      "urn:mavedb:00000001-c-1",
+      "urn:mavedb:00000001-b-2",
+      "urn:mavedb:00000001-a-3",
+      "urn:mavedb:00001251-a-1"
+    ]
+  },
+  "metrics": {
+    "mean_rho_llr": 0.202008556596455,
+    "mean_rho_neg_displacement": 0.18046033776375447,
+    "rows": [
+      {
+        "accession": "P0DP23",
+        "assay": "Human Calmodulin DMS-TileSeq",
+        "urn": "urn:mavedb:00000001-c-1",
+        "n_variants": 2525,
+        "rho_llr": 0.1872731577,
+        "rho_neg_displacement": 0.1696384763
+      },
+      {
+        "accession": "P63165",
+        "assay": "SUMO1 DMS-TileSeq",
+        "urn": "urn:mavedb:00000001-b-2",
+        "n_variants": 1778,
+        "rho_llr": 0.4774083924,
+        "rho_neg_displacement": 0.2440912643
+      },
+      {
+        "accession": "P63279",
+        "assay": "UBE2I DMS-TileSeq",
+        "urn": "urn:mavedb:00000001-a-3",
+        "n_variants": 2870,
+        "rho_llr": -0.0111054996,
+        "rho_neg_displacement": 0.1479540276
+      },
+      {
+        "accession": "Q9H3S4",
+        "assay": "TPK1 DMS-TileSeq",
+        "urn": "urn:mavedb:00001251-a-1",
+        "n_variants": 4123,
+        "rho_llr": 0.1544581759,
+        "rho_neg_displacement": 0.1601575829
+      }
+    ]
+  }
+}
