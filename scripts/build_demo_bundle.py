@@ -139,9 +139,10 @@ def main() -> int:
         (out / name).write_text(json.dumps(demo_map))
     # Cluster summaries travel as-is: they describe full-corpus clusters, and
     # the map subset carries the same cluster ids.
-    clusters_src = Path("data/index/clusters_mean.json")
-    if clusters_src.exists():
-        (out / "clusters_mean.json").write_text(clusters_src.read_text())
+    for cluster_file in ("clusters_mean.json", "clusters_mean_hdbscan.json"):
+        src = Path("data/index") / cluster_file
+        if src.exists():
+            (out / cluster_file).write_text(src.read_text())
     (out / "proteins.json").write_text(
         json.dumps([summary_of(by_acc.loc[acc]) for acc in subset])
     )
