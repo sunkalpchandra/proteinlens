@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from api.schemas import (
     AttentionResponse,
+    ConservationResponse,
     ProteinProfile,
     ProteinSummary,
     RepresentationStats,
@@ -116,4 +117,21 @@ def protein_attention(
         length=int(row["length"]),
         weights=w.round(6).tolist(),
         top_positions=[int(p) + 1 for p in top],  # 1-based positions
+    )
+
+
+@router.get("/protein/{accession}/conservation", response_model=ConservationResponse)
+def protein_conservation(
+    accession: str, state: AppState = Depends(get_state)
+) -> ConservationResponse:
+    from models.scoring import conservation_profile
+
+    row = state.protein_row(accession)
+    with state.encoder_lock:
+        log_probs = state.scorer.log_probs(row["sequence"])
+    profile = conservation_profile(log_probs, row["sequence"])
+    return ConservationResponse(
+        accession=accession,
+        length=int(row["length"]),
+        **profile,
     )

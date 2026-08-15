@@ -304,3 +304,16 @@ class FetchProteinResponse(BaseModel):
         "Externally fetched entries are embedded on demand and searched "
         "against the corpus; they are not added to the corpus or the map."
     )
+
+
+class ConservationResponse(BaseModel):
+    accession: str
+    length: int
+    entropy: list[float]
+    wt_logprob: list[float]
+    max_entropy: float
+    note: str = (
+        "Per-position entropy and wild-type log-probability of the frozen "
+        "masked-LM distribution — a model-dependent signal, not an "
+        "alignment-based evolutionary conservation score."
+    )
