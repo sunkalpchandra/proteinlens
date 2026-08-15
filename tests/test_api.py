@@ -209,3 +209,14 @@ class TestMapPresets:
         response = client.get("/map", params={"pooling": "attention", "preset": "local"})
         assert response.status_code == 404
         assert "mean pooling" in response.json()["detail"]
+
+
+class TestClusterAlgorithms:
+    def test_unknown_algorithm_422(self, client):
+        response = client.get("/clusters", params={"algorithm": "dbscan"})
+        assert response.status_code == 422
+
+    def test_missing_hdbscan_view_404(self, client):
+        response = client.get("/clusters", params={"algorithm": "hdbscan"})
+        assert response.status_code == 404
+        assert "hdbscan" in response.json()["detail"]
