@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.4.0 — 2026-08-14
+
+Model conservation, a four-assay DMS study, and product quantization.
+
+- **Model-conservation track**: per-position entropy and wild-type
+  log-probability of the masked-LM distribution (one forward pass), on every
+  profile beside the attention track — explicitly a model signal, not an
+  alignment-based conservation score.
+- **Four-assay DMS study**: SUMO1, UBE2I, and TPK1 join CALM1 (11,296 measured
+  substitutions from MaveDB). Finding: the likelihood ratio is high-variance
+  across assays (+0.477 on SUMO1, ~0 on UBE2I) while embedding displacement is
+  consistent (+0.15 to +0.24) and matches or beats it on half the assays.
+- **IVFPQ backend**: product quantization for the million-vector regime — 22x
+  smaller indexes at top QPS, with the recall collapse on clustered data
+  documented (candidate generation, not a drop-in index).
+- Sitemap + robots for the static site; DMS targets added to the corpus
+  (12,008 proteins).
+
 ## 0.3.0 — 2026-08-14
 
 Mutation scoring, experimental validation, and external integrations.
