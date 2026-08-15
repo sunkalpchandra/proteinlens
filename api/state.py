@@ -109,7 +109,11 @@ class AppState:
                 for r in rows.rename(columns={"name": "name_"}).itertuples()]
 
     def n_proteins_with_domains(self) -> int:
-        return int(self._domains_frame()["accession"].nunique())
+        # Intersect with the corpus: a stale domains file must not count
+        # proteins that a rebuilt corpus no longer contains.
+        frame = self._domains_frame()
+        in_corpus = frame["accession"].isin(self.by_accession.index)
+        return int(frame.loc[in_corpus, "accession"].nunique())
 
     # -- helpers ----------------------------------------------------------
     def protein_row(self, accession: str) -> pd.Series:
