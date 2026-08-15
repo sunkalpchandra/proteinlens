@@ -34,17 +34,32 @@ def kmeans_clusters(
 
 
 def hdbscan_clusters(
-    embeddings: np.ndarray, min_cluster_size: int = 15, min_samples: int = 5
+    embeddings: np.ndarray,
+    min_cluster_size: int = 15,
+    min_samples: int = 5,
+    normalize: bool = True,
+    selection: str = "leaf",
 ) -> tuple[np.ndarray, dict]:
+    """Density-based clustering of embedding space.
+
+    Callers should pass a reduced representation (e.g. PCA-50, with
+    ``normalize=False``) — density collapses in raw high-dimensional space.
+    Even then, protein embedding space is largely one connected low-density
+    manifold: EOM selection merges nearly everything, so the default is leaf
+    selection, which reports the tight density islands and honestly labels
+    the connected bulk as noise (-1).
+    """
     from sklearn.cluster import HDBSCAN
 
-    x = l2_normalize(embeddings)
+    x = l2_normalize(embeddings) if normalize else np.asarray(embeddings)
     model = HDBSCAN(min_cluster_size=min_cluster_size, min_samples=min_samples,
-                    metric="euclidean")  # euclidean on unit sphere ≈ monotone in cosine
+                    metric="euclidean",  # euclidean on unit sphere ≈ monotone in cosine
+                    cluster_selection_method=selection, copy=True)
     labels = model.fit_predict(x)
     n_clusters = int(labels.max()) + 1
     return labels, {"algorithm": "hdbscan", "min_cluster_size": min_cluster_size,
-                    "min_samples": min_samples, "n_clusters": n_clusters,
+                    "min_samples": min_samples, "selection": selection,
+                    "n_clusters": n_clusters,
                     "noise_fraction": float((labels == -1).mean())}
 
 

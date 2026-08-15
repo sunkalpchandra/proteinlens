@@ -126,7 +126,16 @@ def build_map_payload(
     if with_hdbscan:
         # Density-based alternative view: map points keep k-means ids; the
         # cluster browser offers this as a second lens (noise stays -1).
-        h_labels, h_info = hdbscan_clusters(embeddings)
+        # Density collapses in raw 480-d space (one giant cluster), so HDBSCAN
+        # runs in the same PCA-50 space the UMAP pipeline uses.
+        from sklearn.decomposition import PCA
+
+        from ml.embeddings import l2_normalize
+
+        reduced = PCA(n_components=min(50, embeddings.shape[1]), random_state=seed
+                      ).fit_transform(l2_normalize(embeddings))
+        h_labels, h_info = hdbscan_clusters(reduced, normalize=False)
+        h_info["space"] = "pca50"
         h_summaries = cluster_summaries(meta, h_labels)
         (out_dir / f"clusters_{pooling}_hdbscan.json").write_text(
             json.dumps({"pooling": pooling, "clustering": h_info, "clusters": h_summaries})
