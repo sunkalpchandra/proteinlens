@@ -66,6 +66,7 @@ def main() -> int:
     (out / "meta.json").write_text(json.dumps({
         "model": PROST_MODEL, "slug": "prostt5", "dim": encoder.hidden_size,
         "n": len(subset), "poolings": ["mean"], "fp16": encoder.half,
+        "tokenizer": encoder.tokenizer_provenance,
         "subset_file": str(args.subset), "limit": args.limit,
         "wall_time_s": round(time.time() - t0, 1),
         "device": str(encoder.device),

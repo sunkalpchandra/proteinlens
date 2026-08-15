@@ -41,6 +41,14 @@ class ProstT5Encoder:
         # Fast tokenizer: the slow T5 path misroutes ProstT5's sentencepiece
         # model through a tiktoken parser in transformers v5 and crashes.
         self.tokenizer = AutoTokenizer.from_pretrained(PROST_MODEL, use_fast=True)
+        if not getattr(self.tokenizer, "is_fast", False):
+            raise RuntimeError(
+                "ProstT5 loaded a slow tokenizer — transformers fell back from "
+                "the fast path (missing 'tokenizers'/'protobuf'?). The slow "
+                "path crashes on this checkpoint's sentencepiece model; "
+                "install the fast-tokenizer dependencies instead."
+            )
+        self.tokenizer_provenance = type(self.tokenizer).__name__
         self.model = T5EncoderModel.from_pretrained(PROST_MODEL)
         # fp16 halves the 4.8GB fp32 footprint; CPU stays fp32 (no half kernels).
         self.half = half and self.device.type != "cpu"
