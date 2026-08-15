@@ -86,3 +86,21 @@ class ProjectionCache:
             info=np.array(json.dumps({**info, **asdict(params)})),
         )
         return coords, {**info, **asdict(params)}, False
+
+
+# UMAP neighborhood presets — the single source of truth for names, parameters,
+# and artifact naming. build_index writes these files, the API validates and
+# serves them, and the demo bundle mirrors them.
+MAP_PRESETS: dict[str, dict] = {
+    "default": {"n_neighbors": 15, "min_dist": 0.1},
+    "local": {"n_neighbors": 5, "min_dist": 0.05},
+    "global": {"n_neighbors": 50, "min_dist": 0.3},
+}
+
+
+def map_filename(pooling: str, preset: str = "default") -> str:
+    """Canonical artifact name; the default preset carries no suffix."""
+    if preset not in MAP_PRESETS:
+        raise KeyError(f"Unknown map preset '{preset}'. Options: {sorted(MAP_PRESETS)}")
+    suffix = "" if preset == "default" else f"_{preset}"
+    return f"map_{pooling}{suffix}.json"
