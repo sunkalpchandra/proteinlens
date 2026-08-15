@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.3.0 — 2026-08-14
+
+Mutation scoring, experimental validation, and external integrations.
+
+- **LM log-likelihood scoring**: wild-type-marginal LLR (Meier et al. style)
+  from the masked-LM head; whole landscapes from one forward pass. Surfaced in
+  /mutation, /mutation-landscape, the heatmap metric toggle, and the detail
+  panel.
+- **DMS validation (MaveDB)**: human Calmodulin DMS-TileSeq, 2,525 measured
+  substitutions — LLR ρ = +0.187, −‖Δz‖ ρ = +0.170 (p < 1e-17); report +
+  figure 11. Honest scale framing; displacement tracks the assay nearly as
+  well as the likelihood score at 35M parameters.
+- **Live UniProt fetch**: POST /fetch-protein embeds any accession on demand
+  and searches the corpus; search page offers it on empty results.
+- **PDB cross-references**: 41k structure links across 24% of the corpus,
+  rendered as RCSB chips on profiles and in the demo bundle.
+
 ## 0.2.0 — 2026-08-14
 
 Extended-studies release: multi-checkpoint scaling, contrastive pooling,
