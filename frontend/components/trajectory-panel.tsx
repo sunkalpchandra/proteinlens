@@ -9,7 +9,7 @@
  *  representation-space movement, never an evolutionary trajectory.
  */
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ApiError, isLive, trajectoryOf } from "@/lib/data";
 import type { Pooling, TrajectoryPayload } from "@/lib/types";
 
@@ -37,6 +37,13 @@ export function TrajectoryPanel({ accession, pooling, seedMutation = null }: Tra
     setResult(null);
     setError(null);
   };
+
+  // Results are pooling-specific; a pooling switch must not leave numbers
+  // computed under the previous strategy on screen.
+  useEffect(() => {
+    invalidate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pooling]);
 
   const add = (mutation: string) => {
     const clean = mutation.trim().toUpperCase();
