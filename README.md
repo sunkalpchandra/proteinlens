@@ -113,8 +113,22 @@ raw 480-d vectors, and every parameter set is cached under a content hash.
 per-residue: ‖Δhᵢ‖₂        local window ±8 around the site
 ```
 
-Displayed strictly as **representation-space perturbation** — not fitness, stability, or
-pathogenicity. The landscape view computes all 19 substitutions at a site in one batched pass.
+Alongside displacement, every mutation reports the field-standard zero-shot statistic — the
+wild-type-marginal **log-likelihood ratio** from the masked-LM head (Meier et al. 2021):
+
+```text
+LLR(pos, wt→mut) = log P(x_pos = mut | x_wt) − log P(x_pos = wt | x_wt)
+```
+
+computed for a whole 19-way landscape from a single forward pass. Both are displayed strictly as
+model statistics — not fitness, stability, or pathogenicity predictions.
+
+**Validated against experiment.** `make dms` downloads the human Calmodulin DMS-TileSeq assay
+from [MaveDB](https://www.mavedb.org) (2,525 measured single substitutions) and correlates both
+statistics with the assay: **LLR ρ = +0.187, −‖Δz‖ ρ = +0.170** (both p < 1e-17;
+`reports/dms_validation.md`, figure 11). Magnitudes fit the encoder's 35M scale — published
+zero-shot correlations reach ~0.4–0.5 only for 650M+ models — and displacement tracks the assay
+nearly as well as the likelihood score.
 
 **Clustering & outliers.** Two lenses: k-means (k=25) partitions the whole corpus, and HDBSCAN
 (leaf selection, PCA-50 space) reports *density islands* — on this corpus, 47 tight islands with
@@ -192,8 +206,10 @@ python scripts/generate_figures.py         # reports/figures/*.png|pdf
 
 # Optional add-ons
 python scripts/download_domains.py         # UniProt DOMAIN coordinates (region views)
+python scripts/download_pdb_xrefs.py       # PDB structure links for profiles
 make extended                              # checkpoint scaling + SupCon + ProstT5 studies
 make ann-benchmark                         # index backends to 150k vectors
+make dms                                   # MaveDB download + DMS validation study
 
 # Serve
 uvicorn api.main:app --reload              # backend on :8000
@@ -217,7 +233,8 @@ Environment knobs: `PROTEINLENS_MODEL` (any ESM-2 checkpoint), `PROTEINLENS_DEVI
 `GET /health` · `GET /stats` · `POST /embed` · `POST /search` · `POST /region-search` ·
 `POST /compare` · `GET /proteins?q=` · `GET /protein/{id}` · `GET /protein/{id}/attention` ·
 `GET /protein/{id}/domains` · `POST /mutation` · `POST /mutation-landscape` ·
-`POST /trajectory` · `GET /map?preset=default|local|global` · `GET /clusters` ·
+`POST /trajectory` · `POST /fetch-protein` (live UniProt fetch + on-demand embedding) ·
+`GET /map?preset=default|local|global` · `GET /clusters?algorithm=kmeans|hdbscan` ·
 `GET /benchmark`
 
 Pydantic schemas validate everything; invalid amino-acid symbols return a clean 422 with the
