@@ -72,3 +72,10 @@ lint:
 
 clean:
 	rm -rf .pytest_cache .ruff_cache **/__pycache__
+
+pdb-xrefs:
+	$(PYTHON) scripts/download_pdb_xrefs.py
+
+dms:
+	$(PYTHON) scripts/download_dms.py
+	$(PYTHON) scripts/run_dms_validation.py
