@@ -85,3 +85,27 @@ class MaskedLMScorer:
         return {
             aa: float(row[i] - wt_lp) for i, aa in enumerate(CANONICAL_AA)
         }
+
+
+def conservation_profile(log_probs: torch.Tensor, sequence: str) -> dict:
+    """Per-position conservation signals from one wt-marginal forward pass.
+
+    Two views over the [L, 20] log-prob table:
+      entropy    Shannon entropy (nats) of the position's residue distribution
+                 — low entropy = the model concentrates mass on few residues.
+      wt_logprob log-probability of the wild-type residue — high = the model
+                 "expects" what evolution put there.
+
+    Model-dependent statistics about ESM-2's learned distribution, not
+    evolutionary conservation scores (no alignment is involved).
+    """
+    probs = log_probs.exp()
+    probs = probs / probs.sum(dim=-1, keepdim=True)  # renormalize the 20-slice
+    entropy = -(probs * probs.clamp_min(1e-12).log()).sum(dim=-1)
+    wt_idx = torch.tensor([CANONICAL_AA.index(a) for a in sequence])
+    wt_logprob = log_probs.gather(1, wt_idx.unsqueeze(1)).squeeze(1)
+    return {
+        "entropy": [round(float(v), 4) for v in entropy],
+        "wt_logprob": [round(float(v), 4) for v in wt_logprob],
+        "max_entropy": round(float(torch.log(torch.tensor(20.0))), 4),
+    }
