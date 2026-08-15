@@ -310,3 +310,12 @@ export async function compareProteins(a: string, b: string): Promise<ComparePayl
     body: JSON.stringify({ a, b }),
   });
 }
+
+export const LIVE_NOTICE = "Requires the live API — run the backend locally.";
+
+/** Uniform user-facing message for data-layer failures: 501s become the
+ *  live-API notice; everything else surfaces its own message. */
+export function errorMessage(e: unknown): string {
+  if (e instanceof ApiError && e.status === 501) return LIVE_NOTICE;
+  return e instanceof Error ? e.message : String(e);
+}

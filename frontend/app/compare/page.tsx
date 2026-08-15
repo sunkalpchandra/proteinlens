@@ -8,11 +8,9 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
-import { ApiError, compareProteins, findProteins, isLive } from "@/lib/data";
+import { compareProteins, errorMessage, findProteins, isLive, LIVE_NOTICE } from "@/lib/data";
 import { blueRamp } from "@/lib/palette";
 import type { ComparePayload, ProteinSummary } from "@/lib/types";
-
-const LIVE_NOTICE = "Requires the live API — run the backend locally.";
 
 function Finder({
   label,
@@ -181,13 +179,7 @@ function CompareWorkbench() {
       .then((payload) => req.current === mine && setResult(payload))
       .catch((e: unknown) => {
         if (req.current !== mine) return;
-        setError(
-          e instanceof ApiError && e.status === 501
-            ? LIVE_NOTICE
-            : e instanceof Error
-              ? e.message
-              : "Comparison failed.",
-        );
+        setError(errorMessage(e));
       })
       .finally(() => req.current === mine && setLoading(false));
   }, [a, b]);

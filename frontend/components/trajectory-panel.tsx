@@ -10,7 +10,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { ApiError, isLive, trajectoryOf } from "@/lib/data";
+import { errorMessage, isLive, trajectoryOf } from "@/lib/data";
 import type { Pooling, TrajectoryPayload } from "@/lib/types";
 
 const MUTATION_RE = /^[A-Z]\d+[A-Z]$/;
@@ -71,13 +71,7 @@ export function TrajectoryPanel({ accession, pooling, seedMutation = null }: Tra
       if (req.current === mine) setResult(payload);
     } catch (e) {
       if (req.current === mine) {
-        setError(
-          e instanceof ApiError && e.status === 501
-            ? "Requires the live API — run the backend locally."
-            : e instanceof Error
-              ? e.message
-              : "Trajectory failed.",
-        );
+        setError(errorMessage(e));
       }
     } finally {
       if (req.current === mine) setLoading(false);

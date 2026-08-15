@@ -15,8 +15,8 @@ import { EmbeddingMap } from "@/components/embedding-map";
 import { MapLegend } from "@/components/map-legend";
 import { buildColorScale, COLOR_MODES, type ColorMode } from "@/lib/color-modes";
 import {
-  ApiError,
   availableMapPoolings,
+  errorMessage,
   findProteins,
   getMap,
   searchByAccession,
@@ -30,17 +30,11 @@ import type {
   SearchHit,
 } from "@/lib/types";
 
-const LIVE_NOTICE = "Requires the live API — run the backend locally.";
 const NEIGHBOR_K = 15;
 const EMPTY_POINTS: MapPoint[] = [];
 
 const SELECT_CLS =
   "rounded border border-bd bg-surface2 px-2 py-1 font-mono text-[12px] text-ink2 focus:border-bds focus:outline-none";
-
-function errorMessage(e: unknown): string {
-  if (e instanceof ApiError && e.status === 501) return LIVE_NOTICE;
-  return e instanceof Error ? e.message : String(e);
-}
 
 export default function ExplorerPage() {
   const router = useRouter();
