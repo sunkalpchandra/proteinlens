@@ -125,10 +125,7 @@ def main() -> int:
                      f"| {r['build_s']} | {r['size_mb']} | {r['qps']:,} | {r['recall@10']} |")
     lines += [
         "",
-        "Reading: at 12k vectors exact search is already fast — the ANN backends "
-        "exist for the 100k+ regime, where HNSW trades a one-time build cost for "
-        "an order-of-magnitude query speedup at high recall. `auto_backend` "
-        "switches at 50k vectors.", "",
+        "Reading: at 12k vectors exact search is already fast — the ANN backends exist for the 100k+ regime, where HNSW trades a one-time build cost for a query speedup at ~0.999 recall. IVFPQ is the memory tool: ~22x smaller at the highest QPS, but recall collapses on tightly clustered data without a reranking stage — treat it as candidate generation feeding an exact re-scorer, not a drop-in index. `auto_backend` switches to HNSW at 50k vectors.", "",
     ]
     (args.reports / "ann_benchmark.md").write_text("\n".join(lines))
     print(f"Wrote {args.reports / 'ann_benchmark.csv'} and .md")

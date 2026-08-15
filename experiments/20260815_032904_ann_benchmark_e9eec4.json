@@ -1,0 +1,95 @@
+{
+  "experiment_id": "20260815_032904_ann_benchmark_e9eec4",
+  "kind": "ann_benchmark",
+  "created_at": "2026-08-15T03:29:04.496091+00:00",
+  "git_commit": "1dd466af2e3d506cb5e95e1e1a3c30225587ca9d",
+  "config": {
+    "scale_n": 150000,
+    "queries": 1000,
+    "seed": 42
+  },
+  "metrics": {
+    "rows": [
+      {
+        "regime": "corpus-12k",
+        "backend": "flat",
+        "n_vectors": 12008,
+        "dim": 480,
+        "build_s": 0.06,
+        "size_mb": 23.1,
+        "qps": 742.0,
+        "recall@10": 1.0
+      },
+      {
+        "regime": "corpus-12k",
+        "backend": "hnsw",
+        "n_vectors": 12008,
+        "dim": 480,
+        "build_s": 8.53,
+        "size_mb": 26.3,
+        "qps": 4342.0,
+        "recall@10": 0.9982
+      },
+      {
+        "regime": "corpus-12k",
+        "backend": "ivf",
+        "n_vectors": 12008,
+        "dim": 480,
+        "build_s": 1.2,
+        "size_mb": 24.1,
+        "qps": 9049.1,
+        "recall@10": 0.9706
+      },
+      {
+        "regime": "corpus-12k",
+        "backend": "ivfpq",
+        "n_vectors": 12008,
+        "dim": 480,
+        "build_s": 19.48,
+        "size_mb": 2.1,
+        "qps": 17332.8,
+        "recall@10": 0.5699
+      },
+      {
+        "regime": "synthetic-150k",
+        "backend": "flat",
+        "n_vectors": 150000,
+        "dim": 480,
+        "build_s": 0.19,
+        "size_mb": 288.0,
+        "qps": 4088.4,
+        "recall@10": 1.0
+      },
+      {
+        "regime": "synthetic-150k",
+        "backend": "hnsw",
+        "n_vectors": 150000,
+        "dim": 480,
+        "build_s": 48.82,
+        "size_mb": 328.8,
+        "qps": 6123.6,
+        "recall@10": 0.9995
+      },
+      {
+        "regime": "synthetic-150k",
+        "backend": "ivf",
+        "n_vectors": 150000,
+        "dim": 480,
+        "build_s": 16.38,
+        "size_mb": 293.4,
+        "qps": 12481.7,
+        "recall@10": 1.0
+      },
+      {
+        "regime": "synthetic-150k",
+        "backend": "ivfpq",
+        "n_vectors": 150000,
+        "dim": 480,
+        "build_s": 59.48,
+        "size_mb": 13.1,
+        "qps": 13568.1,
+        "recall@10": 0.1759
+      }
+    ]
+  }
+}

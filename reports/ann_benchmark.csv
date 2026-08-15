@@ -1,7 +1,9 @@
-regime,backend,n_vectors,dim,build_s,qps,recall@10
-corpus-12k,flat,12005,480,0.03,11031.0,1.0
-corpus-12k,hnsw,12005,480,0.75,34609.3,0.9993
-corpus-12k,ivf,12005,480,0.27,38061.9,0.969
-synthetic-150k,flat,150000,480,0.19,4347.2,1.0
-synthetic-150k,hnsw,150000,480,48.88,11088.8,0.9995
-synthetic-150k,ivf,150000,480,67.93,7287.9,1.0
+regime,backend,n_vectors,dim,build_s,size_mb,qps,recall@10
+corpus-12k,flat,12008,480,0.06,23.1,742.0,1.0
+corpus-12k,hnsw,12008,480,8.53,26.3,4342.0,0.9982
+corpus-12k,ivf,12008,480,1.2,24.1,9049.1,0.9706
+corpus-12k,ivfpq,12008,480,19.48,2.1,17332.8,0.5699
+synthetic-150k,flat,150000,480,0.19,288.0,4088.4,1.0
+synthetic-150k,hnsw,150000,480,48.82,328.8,6123.6,0.9995
+synthetic-150k,ivf,150000,480,16.38,293.4,12481.7,1.0
+synthetic-150k,ivfpq,150000,480,59.48,13.1,13568.1,0.1759
